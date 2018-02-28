@@ -15,14 +15,14 @@ class Achievement {
 		if ( empty( $this->config['name'] ) ) $this->config['name'] = 'achiev-name-' . $id;
 		if ( empty( $this->config['desc'] ) ) $this->config['desc'] = 'achiev-desc-' . $id;
 		if ( $this->isStaged() ) sort( $this->config['threshold'], SORT_NUMERIC );
-
+		
 		$counterClass = CounterHandler::getClassname( $this->getType(), true );
-		if ( $counterClass !== '' ) {
-			$this->static = false;
-			$this->counter = new $counterClass( $this );
-		} else {
+		if ( $counterClass === '' || $counterClass === 'StaticCounter' ) {
 			$this->static = true;
 			$this->counter = new StaticCounter( $this );
+		} else {
+			$this->static = false;
+			$this->counter = new $counterClass( $this );
 		}
 	}
 
@@ -39,7 +39,7 @@ class Achievement {
 	}
 
 	public function getType () {
-		return $this->isStatic() ? 'static' : $this->config['type'];
+		return $this->getConfig( 'type', 'static' );
 	}
 
 	public function &getCounter () {

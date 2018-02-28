@@ -265,7 +265,7 @@ class SpecialManageAchievements extends SpecialPage {
 		);
 
 		$htmlForm = new \HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
-		$htmlForm->setWrapperLegend();
+		$htmlForm->setWrapperLegend( '' );
 
 		$htmlForm->setMethod( 'get' );
 		$htmlForm->setSubmitText( $this->msg('htmlform-submit') );
@@ -284,7 +284,7 @@ class SpecialManageAchievements extends SpecialPage {
 		);
 
 		$htmlForm = new \HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
-		$htmlForm->setWrapperLegend();
+		$htmlForm->setWrapperLegend( '' );
 
 		$htmlForm->setMethod( 'get' );
 		$htmlForm->setSubmitText( $this->msg('htmlform-submit') );
@@ -318,7 +318,7 @@ class SpecialManageAchievements extends SpecialPage {
 		);
 
 		$htmlForm = new \HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
-		$htmlForm->setWrapperLegend();
+		$htmlForm->setWrapperLegend( '' );
 
 		$htmlForm->setMethod( 'post' );
 		$htmlForm->setSubmitText( $this->msg('htmlform-submit') );
