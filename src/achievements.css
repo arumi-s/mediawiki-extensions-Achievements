@@ -1,0 +1,13 @@
+@charset "utf-8";
+
+a.achievtitle {
+	
+}
+img.useravatar {
+	margin-left: 0.2em;
+	margin-right: 0.2em;
+	height: 1.6em;
+	width: 1.6em;
+	border-radius: 50%;
+	margin-top: -0.3em;
+}
