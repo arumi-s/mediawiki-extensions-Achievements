@@ -6,7 +6,7 @@ class StaticCounter extends Counter  {
 
 	public function initUserCount ( \User $user, $value = 0 ) {
 		if ( $this->isBlocked( $user ) ) return;
-		return $this->config['init'];
+		return $this->config['init'] + $value;
 	}
 
 	public function updateHook ( $opt, $user, &$count = null ) {

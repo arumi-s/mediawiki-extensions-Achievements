@@ -23,7 +23,11 @@ class Token {
 	}
 
 	private function getTokenMemcKey () {
-		return wfMemcKey( 'achiev', 't', hash_hmac( 'md5', $this->secret, false ) );
+		return self::getMemcKey( hash_hmac( 'md5', $this->secret, false ) );
+	}
+
+	static public function getMemcKey ( $t ) {
+		return wfMemcKey( 'achiev', 't', $t );
 	}
 
 	public static function getToken( $user, $achiev, $stage = 0, $addvalue = null, $target = null, $life = 0 ) {

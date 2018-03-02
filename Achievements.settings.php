@@ -1,8 +1,0 @@
-<?php
-
-//$wgAchievementsIconStaged = '';
-//$wgAchievementsIconNormal = '';
-
-$wgAchievementsConfigs = [
-	
-];

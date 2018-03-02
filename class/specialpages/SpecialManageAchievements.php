@@ -4,6 +4,8 @@ namespace Achiev;
 
 use \SpecialPage;
 use \User;
+use \Html;
+use \HTMLForm;
 
 class SpecialManageAchievements extends SpecialPage {
 	
@@ -16,8 +18,10 @@ class SpecialManageAchievements extends SpecialPage {
 	const MODE_RECENT = 5;
 	const MODE_USER = 6;
 	const MODE_MSG = 7;
-	const MODE_TOKEN = 8;
-	const MODE_RANDOM = 9;
+	const MODE_RANKING = 8;
+	const MODE_TOKEN = 9;
+	const MODE_TOKENS = 10;
+	const MODE_RANDOM = 99;
 
 	function __construct() {
 		parent::__construct( 'ManageAchievements', 'manageachievements' );
@@ -56,9 +60,15 @@ class SpecialManageAchievements extends SpecialPage {
 			case 'msg':
 			case self::MODE_MSG:
 				return self::MODE_MSG;
+			case 'ranking':
+			case self::MODE_RANKING:
+				return self::MODE_RANKING;
 			case 'token':
 			case self::MODE_TOKEN:
 				return self::MODE_TOKEN;
+			case 'tokens':
+			case self::MODE_TOKENS:
+				return self::MODE_TOKENS;
 			case 'random':
 			case self::MODE_RANDOM:
 				return self::MODE_RANDOM;
@@ -86,7 +96,9 @@ class SpecialManageAchievements extends SpecialPage {
 			'recent',
 			'user',
 			'msg',
-			'token'
+			'ranking',
+			'token',
+			'tokens',
 		];
 
 		foreach ( $modes as $mode ) {
@@ -96,10 +108,13 @@ class SpecialManageAchievements extends SpecialPage {
 			);
 		}
 
-		return \Html::rawElement(
+		return Html::rawElement(
 			'span',
 			[ 'class' => 'mw-manageachievements-toollinks' ],
-			wfMessage( 'parentheses' )->rawParams( $lang->pipeList( $tools ) )->escaped()
+			$linkRenderer->makeKnownLink(
+				SpecialPage::getTitleFor( 'ManageAchievements' ),
+				wfMessage( 'manageachievements' )->text()
+			) . wfMessage( 'parentheses' )->rawParams( $lang->pipeList( $tools ) )->escaped()
 		);
 	}
 
@@ -149,7 +164,7 @@ class SpecialManageAchievements extends SpecialPage {
 				$out->addModules( [ 'ext.pref.achievement' ] );
 				break;
 			case self::MODE_PROG:
-				$out->setPageTitle( $this->msg( 'manageachievements-mode-list' ) );
+				$out->setPageTitle( $this->msg( 'manageachievements-mode-prog' ) );
 				$this->showAchievForm( 'processProgInput' );
 				break;
 			case self::MODE_ACHIEVER:
@@ -160,7 +175,6 @@ class SpecialManageAchievements extends SpecialPage {
 				$out->setPageTitle( $this->msg( 'manageachievements-mode-title' ) );
 				$dbw = wfGetDB( DB_SLAVE );
 
-				$list = [];
 				$res = $dbw->select(
 					'user_properties',
 					[ 'up_user', 'up_value' ],
@@ -186,7 +200,6 @@ class SpecialManageAchievements extends SpecialPage {
 				$out->setPageTitle( $this->msg( 'manageachievements-mode-recent' ) );
 				$dbw = wfGetDB( DB_SLAVE );
 
-				$list = [];
 				$res = $dbw->select(
 					'echo_event',
 					[ 'event_type', 'event_agent_id', 'event_extra' ],
@@ -234,11 +247,90 @@ class SpecialManageAchievements extends SpecialPage {
 					preg_replace( '/^\s+/m', "\t", json_encode( $json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE ) )
 				) . '</textarea>' );
 				break;
+			case self::MODE_RANKING:
+				$out->setPageTitle( $this->msg( 'manageachievements-mode-ranking' ) );
+				$dbw = wfGetDB( DB_SLAVE );
+
+				$res = $dbw->select(
+					'achievements',
+					[ 'ac_user', 'COUNT(1) as ac_count' ],
+					[ 'ac_date IS NOT NULL' ],
+					__METHOD__,
+					[ 'ORDER BY' => 'ac_count DESC', 'GROUP BY' => 'ac_user', 'LIMIT' => 100 ]
+				);
+				if ( $res ) {
+					$out->addHTML( '<ol>' );
+					while ( $row = $res->fetchRow() ) {
+						$out->addHTML('<li>'.User::whoIs( $row['ac_user'] ) . ': ' . $row['ac_count'] .'</li>' );
+					}
+					$out->addHTML( '</ol>' );
+				}
+				break;
 			case self::MODE_TOKEN:
 				$out->setPageTitle( $this->msg( 'manageachievements-mode-token' ) );
 				$this->showTokenForm( 'processTokenInput' );
 				break;
+			case self::MODE_TOKENS:
+				$out->setPageTitle( $this->msg( 'manageachievements-mode-tokens' ) );
+				$dbw = wfGetDB( DB_SLAVE );
+				$keyprefix = str_replace( '@@', '', Token::getMemcKey( '@@' ) );
+
+				$res = $dbw->select(
+					'objectcache',
+					[ 'keyname', 'exptime' ],
+					[ 'keyname ' . $dbw->buildLike( $keyprefix, $dbw->anyString() ) ],
+					__METHOD__,
+					[ 'ORDER BY' => 'exptime ASC', 'LIMIT' => 1000 ]
+				);
+				if ( $res ) {
+					$keylist = [];
+					$explist = [];
+					foreach ( $res as $row ) {
+						$keylist[] = $row->keyname;
+						$explist[$row->keyname] = $row->exptime;
+					}
+					$cache = \ObjectCache::getMainStashInstance();
+					$datalist = $cache->getMulti( $keylist );
+					
+					$out->addHTML(
+						Html::openElement( 'table', [ 'class' => 'wikitable sortable' ] ) .
+						Html::openElement( 'tr' ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-hash' )->text() ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-achievid' )->text() ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-user' )->text() ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-target' )->text() ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-count' )->text() ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-exptime' )->text() ) .
+						Html::closeElement( 'tr' )
+					);
+					foreach ( $datalist as $key => &$data ) {
+						if ( empty( $data ) || !isset( $data['achiev'] ) ) continue;
+						$out->addHTML( Html::openElement( 'tr' ) );
+						$out->addHTML( Html::rawElement( 'td', [], str_replace( $keyprefix, '', $key ) ) );
+						$out->addHTML( Html::rawElement( 'td', [], $data['achiev'] ) );
+						if ( !empty( $data['user'] ) ) {
+							$out->addHTML( Html::rawElement( 'td', [], User::whoIs( $data['user'] ) ) );
+						} else {
+							$out->addHTML( Html::rawElement( 'td', [], '' ) );
+						}
+						if ( !empty( $data['target'] ) ) {
+							$out->addHTML( Html::rawElement( 'td', [], User::whoIs( $data['target'] ) ) );
+						} else {
+							$out->addHTML( Html::rawElement( 'td', [], '' ) );
+						}
+						if ( isset( $data['count'] ) ) {
+							$out->addHTML( Html::rawElement( 'td', [], $data['count'] ) );
+						} else{
+							$out->addHTML( Html::rawElement( 'td', [], '' ) );
+						}
+						$out->addHTML( Html::rawElement( 'td', [ 'data-sort-value' => $explist[$key] ], $lang->userTimeAndDate( $explist[$key], $user ) ) );
+						$out->addHTML( Html::closeElement( 'tr' ) );
+					}
+					$out->addHTML( Html::closeElement( 'table' ) );
+				}
+				break;
 			case self::MODE_RANDOM:
+				$out->setPageTitle( $this->msg( 'manageachievements-mode-random' ) );
 				$list = AchievementHandler::AchievementsFromCounter( 'random' );
 				$out->addHTML( '<ul>' );
 				foreach ( $list as $ac ) {
@@ -264,7 +356,7 @@ class SpecialManageAchievements extends SpecialPage {
 			),
 		);
 
-		$htmlForm = new \HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
+		$htmlForm = new HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
 		$htmlForm->setWrapperLegend( '' );
 
 		$htmlForm->setMethod( 'get' );
@@ -283,7 +375,7 @@ class SpecialManageAchievements extends SpecialPage {
 			),
 		);
 
-		$htmlForm = new \HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
+		$htmlForm = new HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
 		$htmlForm->setWrapperLegend( '' );
 
 		$htmlForm->setMethod( 'get' );
@@ -317,7 +409,7 @@ class SpecialManageAchievements extends SpecialPage {
 			),
 		);
 
-		$htmlForm = new \HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
+		$htmlForm = new HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
 		$htmlForm->setWrapperLegend( '' );
 
 		$htmlForm->setMethod( 'post' );

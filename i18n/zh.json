@@ -24,9 +24,11 @@
 	"manageachievements-mode-recent" : "查看成就动态",
 	"manageachievements-mode-user" : "查看用户成就",
 	"manageachievements-mode-msg" : "成就名称信息",
+	"manageachievements-mode-ranking" : "保有成就数排名",
 	"manageachievements-mode-token" : "创建成就兑换码",
+	"manageachievements-mode-tokens" : "查看成就兑换码",
 	"manageachievements-mode-random" : "查看随机成就",
-	"manage-achiev-name" : "成就名称：",
+	"manage-achiev-name" : "成就编号：",
 	"manage-achiev-user" : "用户名称：",
 	"manage-achiev-user-count" : "（$1人）",
 	"manage-achiev-token-fail" : "无法创建成就兑换码，请检查颁发者用户状态及成就设定",
@@ -35,7 +37,13 @@
 	"manage-achiev-token-user" : "指定用户（可选）：",
 	"manage-achiev-token-count" : "计数增加（可选）：",
 	"manage-achiev-token-time" : "有效时间（秒，可选）：",
-
+	"manage-achiev-tokens-hash" : "哈希值",
+	"manage-achiev-tokens-achievid" : "成就编号",
+	"manage-achiev-tokens-user" : "颁发用户",
+	"manage-achiev-tokens-target" : "目标用户",
+	"manage-achiev-tokens-count" : "计数增加",
+	"manage-achiev-tokens-exptime" : "过期时间",
+	
 	"redeem-achiev-token-section" : "请输入兑换码",
 	"achiev-loginrequired" : "您必须登录才能获取成就。",
 	"redeem-achiev-token" : "兑换码：",
@@ -84,6 +92,5 @@
 	"notification-body-achiev-link" : "前往头衔及成就设置页面",
 	"notification-body-achiev-addvalue" : "您在成就〈$1〉中获得了 $2 进度",
 
-	"achievtitle-afterlink" : "〈$1〉",
-
+	"achievtitle-afterlink" : "〈$1〉"
 }

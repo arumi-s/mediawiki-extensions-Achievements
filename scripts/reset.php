@@ -23,7 +23,6 @@ class ResetAchievementCounter extends Maintenance {
 		fclose( $hand );
 		return true;
 	}
-
 	function execute() {
 		$interval = trim($this->getOption( 'i', false ));	
 		$yeshook = !$this->getOption( 'nohook', false );	

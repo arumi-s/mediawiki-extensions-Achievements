@@ -329,6 +329,7 @@ class Achievement {
 		}
 		$success = $dbw->affectedRows() != 0;
 		if ( $success ) {
+			\Hooks::run( 'AchievementAward', [ $user, $this, $stage ] );
 			\EchoEvent::create( [
 				'type' => 'achiev-award',
 				'extra' => [
@@ -363,6 +364,7 @@ class Achievement {
 
 		$success = $dbw->affectedRows() != 0;
 		if ( $success ) {
+			\Hooks::run( 'AchievementRemove', [ $user, $this, $stage ] );
 			\EchoEvent::create( [
 				'type' => 'achiev-remove',
 				'extra' => [
