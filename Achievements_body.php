@@ -84,10 +84,10 @@ class ExtAchievement {
 				} else {
 					$stageBlocks .= self::tooltip(
 						'div', $i + 1,
-						wfMessage( 'achiev-mystery' )->inContentLanguage()->text(),
+						wfMessage( 'achiev-mystery' )->text(),
 						'achiev-block'
 					);
-					$achievers[] = wfMessage( 'achiev-achievers-count-mystery' )->inContentLanguage()->text();
+					$achievers[] = wfMessage( 'achiev-achievers-count-mystery' )->text();
 				}
 				
 			}
@@ -143,7 +143,7 @@ class ExtAchievement {
 			$progBot = max( 1, $progBot );
 			$progTop = min( max( 0, $progTop ), $progBot );
 			$percent = round( max( 0, min( $progTop / $progBot, 1 ) ) * 100, 0 );
-			$progtext = wfMessage( 'achiev-progtext' )->rawParams( $progTop, $progBot, $percent )->inContentLanguage()->text();
+			$progtext = wfMessage( 'achiev-progtext' )->rawParams( $progTop, $progBot, $percent )->text();
 			
 			$progBar = Html::rawElement( 'div', [ 'class' => 'achiev-bar', 'title' => $progtext ],
 				Html::rawElement( 'div', [ 'class' => 'achiev-barfill' . ($nowcomplete ? ' achiev-barfill-c' : ''), 'style' => 'width:' . $percent.'%' ], '' )
@@ -167,11 +167,11 @@ class ExtAchievement {
 				global $wgLang;
 				$footnotes[] = self::tooltip(
 					'span',
-					wfMessage( 'achiev-config-activerange' )->inContentLanguage()->text(),
+					wfMessage( 'achiev-config-activerange' )->text(),
 					wfMessage( 'achiev-config-activerange-desc' )->rawParams(
 						empty( $activerange[0] ) ? '' : $wgLang->userTimeAndDate( $activerange[0], $user ),
 						empty( $activerange[1] ) ? '' : $wgLang->userTimeAndDate( $activerange[1], $user )
-					)->inContentLanguage()->text()
+					)->text()
 				);
 			}
 			if ( $achiev->isRemovable() ) {
@@ -187,12 +187,12 @@ class ExtAchievement {
 
 		$footnotes[] = self::tooltip(
 			'span',
-			wfMessage( 'achiev-achievers-count-wrap' )->rawParams( implode( wfMessage( 'achiev-achievers-count-sep' )->inContentLanguage()->text(), $achievers ) )->inContentLanguage()->text(),
-			wfMessage( 'achiev-achievers-count-desc' )->inContentLanguage()->text()
+			wfMessage( 'achiev-achievers-count-wrap' )->rawParams( implode( wfMessage( 'achiev-achievers-count-sep' )->text(), $achievers ) )->text(),
+			wfMessage( 'achiev-achievers-count-desc' )->text()
 		);
 
 		$block .= Html::openElement( 'tr' );
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-note' ], implode( wfMessage( 'achiev-footnote-sep' )->inContentLanguage()->text(), $footnotes ) );
+		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-note' ], implode( wfMessage( 'achiev-footnote-sep' )->text(), $footnotes ) );
 		
 		$block .= Html::closeElement( 'table' );
 		
@@ -202,8 +202,8 @@ class ExtAchievement {
 	static public function noteTooltip ( $name ) {
 		return self::tooltip(
 			'span',
-			wfMessage( 'achiev-config-' . $name )->inContentLanguage()->text(),
-			wfMessage( 'achiev-config-' . $name . '-desc' )->inContentLanguage()->text()
+			wfMessage( 'achiev-config-' . $name )->text(),
+			wfMessage( 'achiev-config-' . $name . '-desc' )->text()
 		);
 	}
 
@@ -226,7 +226,7 @@ class ExtAchievement {
 		
 		$table = '';
 		$options = [];
-		$options[wfMessage( 'achievtitle-none' )->inContentLanguage()->text()] = '';
+		$options[wfMessage( 'achievtitle-none' )->text()] = '';
 		foreach ( $allachievs as &$achiev ) {
 			$id = $achiev->getID();
 			if ( empty( $userachievs[$id] ) ) {

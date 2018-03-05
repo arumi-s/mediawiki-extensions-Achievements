@@ -125,8 +125,8 @@ class Achievement {
 
 	public function getAfterLinkMsg ( $stage = 0, $plain = true ) {
 		$text = wfMessage( 'achievtitle-afterlink' )->rawParams(
-			wfMessage( $this->getNameMsgKey( $stage ) )->inContentLanguage()->plain()
-		)->inContentLanguage()->text();
+			wfMessage( $this->getNameMsgKey( $stage ) )->plain()
+		)->text();
 		if ( $plain ) {
 			return strip_tags( $text );
 		} else {
@@ -135,11 +135,11 @@ class Achievement {
 	}
 
 	public function getNameMsg ( $stage = 0 ) {
-		return wfMessage( $this->getNameMsgKey( $stage ) )->inContentLanguage()->text();
+		return wfMessage( $this->getNameMsgKey( $stage ) )->text();
 	}
 
 	public function getDescMsg ( $stage = 0 ) {
-		return wfMessage( $this->getDescMsgKey( $stage ) )->inContentLanguage()->text();
+		return wfMessage( $this->getDescMsgKey( $stage ) )->text();
 	}
 
 	public function getNameMsgKey ( $stage = 0 ) {
