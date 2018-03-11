@@ -3,6 +3,8 @@
 namespace Achiev;
 
 class Achievement {
+	static protected $send_echo_events = true;
+
 	protected $id = null;
 	protected $config = null;
 	protected $counter = null;
@@ -330,14 +332,16 @@ class Achievement {
 		$success = $dbw->affectedRows() != 0;
 		if ( $success ) {
 			\Hooks::run( 'AchievementAward', [ $user, $this, $stage ] );
-			\EchoEvent::create( [
-				'type' => 'achiev-award',
-				'extra' => [
-					'achievid' => $id, 
-					'notifyAgent' => true,
-				],
-				'agent' => $user,
-			] );
+			if ( self::$send_echo_events ) {
+				\EchoEvent::create( [
+					'type' => 'achiev-award',
+					'extra' => [
+						'achievid' => $id, 
+						'notifyAgent' => true,
+					],
+					'agent' => $user,
+				] );
+			}
 		}
 		return $success;
 	}
@@ -365,16 +369,26 @@ class Achievement {
 		$success = $dbw->affectedRows() != 0;
 		if ( $success ) {
 			\Hooks::run( 'AchievementRemove', [ $user, $this, $stage ] );
-			\EchoEvent::create( [
-				'type' => 'achiev-remove',
-				'extra' => [
-					'achievid' => $id,
-					'notifyAgent' => true,
-				],
-				'agent' => $user,
-			] );
+			if ( self::$send_echo_events ) {
+				\EchoEvent::create( [
+					'type' => 'achiev-remove',
+					'extra' => [
+						'achievid' => $id,
+						'notifyAgent' => true,
+					],
+					'agent' => $user,
+				] );
+			}
 		}
 		return $success;
+	}
+
+	static public function suppressEchoEvents () {
+		self::$send_echo_events = false;
+	}
+
+	static public function restoreEchoEvents () {
+		self::$send_echo_events = true;
 	}
 
 	static public function defaultConfig () {

@@ -72,7 +72,7 @@ class ExtAchievement {
 						'achiev-block achiev-block-c'
 					);
 					$lastStage = $i;
-					$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), $threshold );
+					$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), $threshold, $admin );
 				} elseif ( $ativeStage == -1 ) {
 					$ativeStage = $i;
 					$stageBlocks .= self::tooltip(
@@ -80,7 +80,7 @@ class ExtAchievement {
 						$achiev->getNameMsg( $threshold ) . "\n" . $achiev->getDescMsg( $threshold ),
 						'achiev-block achiev-block-a'
 					);
-					$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), $threshold );
+					$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), $threshold, $admin );
 				} else {
 					$stageBlocks .= self::tooltip(
 						'div', $i + 1,
@@ -93,7 +93,7 @@ class ExtAchievement {
 			}
 		}
 		if ( count( $achievers ) == 0 ) {
-			$achievers[] = AchievementHandler::countAchievers( $achiev->getID() );
+			$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), null, $admin );
 		}
 
 		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-stage', 'rowspan' => 4 ], $stageBlocks );

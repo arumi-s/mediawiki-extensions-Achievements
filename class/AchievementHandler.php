@@ -80,11 +80,12 @@ class AchievementHandler {
 	}
 
 	static public function sortAchievements ( &$res ) {
-		usort( $res, function ( &$a, &$b ) {
+		$order = array_keys( self::configs() );
+		usort( $res, function ( &$a, &$b ) use ( $order ) {
 			$an = $a->getID();
 			$bn = $b->getID();
 			if ($an == $bn) return 0;
-			return $an < $bn ? -1 : 1;
+			return array_search( $an, $order ) < array_search( $bn, $order ) ? -1 : 1;
 		} );
 	}
 
@@ -144,16 +145,19 @@ class AchievementHandler {
 
 	}
 
-	static public function countAchievers ( $stagename, $stage = null ) {
+	static public function countAchievers ( $stagename, $stage = null, $refresh = false ) {
 		if ( $stagename === '' ) return 0;
 		if ( !is_null( $stage ) && $stage > 0 ) {
 			$stagename .= ':' . $stage;
 		}
 		
 		$cache = \ObjectCache::getMainWANInstance();
+		$key = $cache->makeKey( 'achiev', 'count', $stagename );
+		
+		if ( $refresh ) $cache->delete( $key, 1 );
 
 		return $cache->getWithSetCallback(
-			$cache->makeKey( 'achiev', 'count', $stagename ),
+			$key,
 			$cache::TTL_HOUR * 24, // Cache for 24 hours
 			function ( $oldValue, &$ttl, &$setOpts ) use ( $stagename ) { // Function to generate the value on cache miss
 				$stage = 0;

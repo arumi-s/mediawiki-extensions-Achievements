@@ -201,11 +201,17 @@ class SpecialManageAchievements extends SpecialPage {
 				$dbw = wfGetDB( DB_SLAVE );
 
 				$res = $dbw->select(
-					'echo_event',
-					[ 'event_type', 'event_agent_id', 'event_extra' ],
+					['echo_event', 'echo_notification'],
+					[ 'event_type', 'event_agent_id', 'event_extra', 'notification_timestamp' ],
 					[ 'event_type' => ['achiev-award','achiev-remove'] ],
 					__METHOD__,
-					[ 'ORDER BY' => 'event_id DESC', 'LIMIT' => 100 ]
+					[ 'ORDER BY' => 'event_id DESC', 'LIMIT' => 100 ],
+					[
+						'echo_notification' => [
+							'LEFT JOIN',
+							[ 'event_id=notification_event' ]
+						]
+					]
 				);
 				if ( $res ) {
 					$out->addHTML( '<ul>' );
@@ -215,7 +221,7 @@ class SpecialManageAchievements extends SpecialPage {
 						$achiev = AchievementHandler::AchievementFromStagedID( $extra['achievid'], $stage );
 						if ( $achiev !== false ) {
 							$auser = \User::newFromId( $row['event_agent_id'] );
-							$ts = AchievementHandler::quickCheckUserAchiev( $auser, $extra['achievid'] );
+							$ts = wfTimestampOrNull( TS_UNIX, $row['notification_timestamp'] );
 							
 							$out->addHTML('<li>' . $auser->getName() . ': '. 
 							$this->msg( 'notification-body-' . $row['event_type'] )->rawParams($achiev->getNameMsg( $stage ), $achiev->getDescMsg( $stage )).

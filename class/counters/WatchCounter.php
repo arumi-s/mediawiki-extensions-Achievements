@@ -95,9 +95,9 @@ class WatchCounter extends Counter  {
 			} else {
 				$count = 0;
 			}
-			return $count + $value;
+			return $count;
 		} else {
-			return $this->config['init'] + $value;
+			return $this->config['init'];
 		}
 	}
 
@@ -128,7 +128,7 @@ class WatchCounter extends Counter  {
 			$title = $article->getTitle();
 			$dbr = wfGetDB( DB_SLAVE );
 			if ( isset( $cond['page'] ) ) {
-				if ( $title->inNamespace( $cond['ns'] ) && $title->getDBkey() === $cond['page'] ) {
+				if ( $title->inNamespace( $cond['ns'] ) && (is_array( $cond['page'] ) ? in_array( $title->getDBkey(), $cond['page'], true ) : $title->getDBkey() === $cond['page']) ) {
 					$inpage = true;
 				} else {
 					if ( $cond['subpage'] && mb_substr( $title->getDBkey(), 0, mb_strlen( $cond['page'].'/' ) ) === $cond['page'].'/' ) {

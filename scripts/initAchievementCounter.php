@@ -16,6 +16,7 @@ class InitAchievementCounter extends Maintenance {
 		$this->addOption( 'all', 'Counter Type to initialize', false, false );
 		$this->addOption( 'alluser', 'Is querying all user', false, false );
 		$this->addOption( 'reset', 'Includes resetable achievements', false, false );
+		$this->addOption( 'suppress', 'Suppress Echo events', false, false );
 	}
 
 	function execute() {
@@ -24,8 +25,10 @@ class InitAchievementCounter extends Maintenance {
 		$all = $this->getOption( 'all', false );
 		$alluser = $this->getOption( 'alluser', false );
 		$reset = $this->getOption( 'reset', false );
+		$suppress = $this->getOption( 'suppress', false );
 		
 		$this->output( "Initializing...\n" );
+		if ( $suppress ) Achiev\Achievement::suppressEchoEvents();
 
 		if ( $id ) {
 			$list = [Achiev\AchievementHandler::AchievementFromID( $id )];
@@ -65,6 +68,7 @@ class InitAchievementCounter extends Maintenance {
 		$i = 0;
 		$maxUserId = 0;
 		do {
+			$this->output( "...start prog $maxUserId\n" );
 			$res = $dbw->select( 'user',
 				User::selectFields(),
 				$alluser ? array( 'user_id > ' . $maxUserId ) : array( 'user_editcount > 0', 'user_id > ' . $maxUserId ),
@@ -83,11 +87,11 @@ class InitAchievementCounter extends Maintenance {
 				++$i;
 			}
 			$maxUserId = $row->user_id;
-			$this->output( "...prog $maxUserId\n" );
 		} while ( $res->numRows() );
 
 		$this->output( "user count $i, user maxid $maxUserId\n" );
 		$this->output( "... end.\n" );
+		if ( $suppress ) Achiev\Achievement::restoreEchoEvents();
 	}
 }
 

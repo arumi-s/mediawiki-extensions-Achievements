@@ -10,7 +10,7 @@ namespace Achiev;
 
 if ( !defined( 'MEDIAWIKI' ) ) die();
 
-define( 'ACHIV_VERSION', '0.2.1' );
+define( 'ACHIV_VERSION', '0.2.2' );
 
 $wgExtensionCredits['parserhook'][] = array(
 	'path' => __FILE__,
