@@ -109,8 +109,7 @@ class WatchCounter extends Counter  {
 			return;
 		}
 
-		$title = $article->getTitle();
-		if ( !$title->exists() ) return;
+		if ( !$article->exists() ) return;
 		if ( $opt[1] == 'WatchArticleComplete' ) {
 			$diff = 1;
 		} else {
