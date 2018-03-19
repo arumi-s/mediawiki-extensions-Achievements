@@ -13,7 +13,7 @@ class InitAchievementCounter extends Maintenance {
 		$this->setBatchSize( 1000 );
 		$this->addOption( 'achiev', 'Achievement ID to initialize', false, true );
 		$this->addOption( 'counter', 'Counter Type to initialize', false, true );
-		$this->addOption( 'all', 'Counter Type to initialize', false, false );
+		$this->addOption( 'all', 'Initialize all Achievements', false, false );
 		$this->addOption( 'alluser', 'Is querying all user', false, false );
 		$this->addOption( 'reset', 'Includes resetable achievements', false, false );
 		$this->addOption( 'suppress', 'Suppress Echo events', false, false );
