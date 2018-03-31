@@ -305,6 +305,19 @@ class Achievement {
 		}
 		$dbw = wfGetDB( DB_MASTER );
 		
+		$exclude = $this->getConfig( 'exclude', false );
+		if ( !empty( $exclude ) ) {
+			$already = $dbw->selectField(
+				'achievements',
+				[ 'ac_date' ],
+				[ 'ac_user' => $user->getId(), 'ac_id' => $exclude, 'ac_date IS NOT NULL' ],
+				__METHOD__
+			);
+			if ( $already ) {
+				return 0;
+			}
+		}
+		
 		$already = $dbw->selectField(
 			'achievements',
 			[ 'ac_date' ],
@@ -395,6 +408,7 @@ class Achievement {
 		return [
 			'reset' => false,
 			'threshold' => 1,
+			'exclude' => false,
 			'removable' => false,
 			'awardable' => false,
 			'hidden' => false,
