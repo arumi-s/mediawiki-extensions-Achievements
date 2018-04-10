@@ -31,11 +31,13 @@ class Token {
 	}
 
 	public static function getToken( $user, $achiev, $stage = 0, $addvalue = null, $target = null, $life = 0 ) {
+		global $wgAchievementsTokenLength;
+		if ( $wgAchievementsTokenLength <= 0 ) return false;
 		if ( $user->isAnon() || $user->isBlocked() || !$user->isAllowed( 'manageachievements' ) ) return false;
 		if ( !$achiev->isAwardable() || !$achiev->isActive() ) return false;
 		
 		$cache = \ObjectCache::getMainStashInstance();
-		$secret = \MWCryptRand::generateHex( 20 );
+		$secret = \MWCryptRand::generateHex( $wgAchievementsTokenLength );
 		$token = new Self( $secret, true );
 		
 		$key = $token->getTokenMemcKey();
@@ -83,7 +85,7 @@ class Token {
 		} else {
 			$userToken = new Self( $string );
 		}
-		if ( $userToken->toString() === '' ) return 'empty-token';
+		if ( $userToken->toString() === '' ) throw new AchievError( 'empty-token' );
 
 		$cache = \ObjectCache::getMainStashInstance();
 		$key = $userToken->getTokenMemcKey();
@@ -92,38 +94,36 @@ class Token {
 
 		if ( $data === false ) {
 			$cache->delete( $key );
-			return 'invalid-token';
+			throw new AchievError( 'invalid-token' );
 		}
 		if ( empty( $data['user'] ) || !(($source = \User::newFromId( $data['user'] )) instanceof \User) ) {
 			$cache->delete( $key );
-			return 'invalid-source';
+			throw new AchievError( 'invalid-source' );
 		}
 		if ( $source->isAnon() || $source->isBlocked() || !$source->isAllowed( 'manageachievements' ) ) {
 			$cache->delete( $key );
-			return 'blocked-source';
+			throw new AchievError( 'blocked-source' );
 		}
 		if ( !empty( $data['target'] ) && $user->getId() !== $data['target'] ) {
-			return 'wrong-user';
+			throw new AchievError( 'wrong-user' );
 		}
 		
 		$stage = 0;
 		$achiev = AchievementHandler::AchievementFromStagedID( isset( $data['achiev'] ) ? $data['achiev'] : '', $stage );
 		if ( !$achiev ) {
 			$cache->delete( $key );
-			return 'achiev-notexists';
+			throw new AchievError( 'achiev-notexists' );
 		}
 		$count = null;
 		if ( isset( $data['count'] ) ) {
 			$count = $data['count'];
-			$success = $achiev->addStaticCountTo( $user, $count );
+			$achiev->addStaticCountTo( $user, $count );
 		} else {
-			$success = $achiev->awardStaticTo( $user, $stage );
+			$achiev->awardStaticTo( $user, $stage );
 		}
-		if ( $success ) {
-			$cache->delete( $key );
-		}
+		$cache->delete( $key );
 
-		return [$success, $achiev, $stage, $count];
+		return [$achiev, $stage, $count];
 	}
 
 	/**

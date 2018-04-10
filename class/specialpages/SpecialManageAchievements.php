@@ -521,11 +521,17 @@ class SpecialManageAchievements extends SpecialPage {
 				
 				$token = Token::getToken( $this->getUser(), $achiev, $stage, $count, $target, $time );
 				if ( $token ) {
-					if ( $target instanceof \User ) $this->successMessage .= $target->getName() . '<br />';
-					if ( !is_null( $count ) ) $this->successMessage .= $count . '<br />';
-					if ( !is_null( $time ) ) $this->successMessage .= $time . '<br />';
-					$this->successMessage .= $token->toString() . '<br />';
-					$this->successMessage .= $token->toUrl();
+					if ( $target instanceof \User ) {
+						$this->successMessage .= $this->msg( 'manage-achiev-token-user' )->parse() . $target->getName() . '<br />';
+					}
+					if ( !is_null( $count ) ) {
+						$this->successMessage .= $this->msg( 'manage-achiev-token-count' )->parse() . $count . '<br />';
+					}
+					if ( !is_null( $time ) ) {
+						$this->successMessage .= $this->msg( 'manage-achiev-token-time' )->parse() . $time . '<br />';
+					}
+					$this->successMessage .= Html::element( 'input', ['type' =>'text', 'value' => $token->toString() ] ). '<br />';
+					$this->successMessage .= Html::element( 'a', ['target' =>'_blank', 'href' => $token->toUrl() ], $token->toUrl() ). '<br />';;
 				} else {
 					if ( $achiev->isAwardable() ) {
 						return $this->msg( 'manage-achiev-token-fail' )->parse();

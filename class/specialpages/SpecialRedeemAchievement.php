@@ -72,24 +72,25 @@ class SpecialRedeemAchievement extends \SpecialPage {
 		if ( $request->wasPosted() ) {
 			$userToken = $data['token'];
 			if ( $userToken ) {
-				$result = Token::useToken( $user, $userToken );
+				try {
+					$result = Token::useToken( $user, $userToken );
+				} catch ( AchievError $e ) {
+					return $e->getMessage();
+				}
 				if ( is_array( $result ) ) {
-					list ( $success, $achiev, $stage, $count ) = $result;
-					if ( $success ) {
-						if ( is_null( $count ) ) {
-							$out->addHTML(
-								$this->msg( 'notification-body-achiev-award' )->rawParams($achiev->getNameMsg( $stage ), $achiev->getDescMsg( $stage ))->parse()
-							);
-						} else {
-							$out->addHTML(
-								$this->msg( 'notification-body-achiev-addvalue' )->rawParams($achiev->getNameMsg(), $count)->parse()
-							);
-						}
+					list ( $achiev, $stage, $count ) = $result;
+					if ( is_null( $count ) ) {
+						$out->addHTML(
+							$this->msg( 'notification-body-achiev-award' )->rawParams($achiev->getNameMsg( $stage ), $achiev->getDescMsg( $stage ))->parse()
+						);
 					} else {
-						return $this->msg( 'achiev-error-award-failed' )->parse();
+						$out->addHTML(
+							$this->msg( 'notification-body-achiev-addvalue' )->rawParams($achiev->getNameMsg(), $count)->parse()
+						);
 					}
 				} else {
-					 return $this->msg( 'achiev-error-' . $result )->parse();
+					 $e = new AchievError( 'award-failed' );
+					 return $e->getMessage();
 				}
 			}
 		}

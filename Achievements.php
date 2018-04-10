@@ -10,7 +10,7 @@ namespace Achiev;
 
 if ( !defined( 'MEDIAWIKI' ) ) die();
 
-define( 'ACHIV_VERSION', '0.2.2' );
+define( 'ACHIV_VERSION', '0.3.0' );
 
 $wgExtensionCredits['parserhook'][] = array(
 	'path' => __FILE__,
@@ -24,12 +24,13 @@ $wgExtensionCredits['parserhook'][] = array(
 // 默认设定
 $wgAchievementsIconStaged = $wgLogo;
 $wgAchievementsIconNormal = $wgLogo;
+$wgAchievementsTokenLength = 10;
 $wgAchievementsConfigs = [];
 
 // 加载设定
 include_once( __DIR__ . '/Achievements.settings.php' );
 
-$wgMessagesDirs['Achievements'] = __DIR__ . '/i18n';
+$wgMessagesDirs['Achievements'] = [ __DIR__ . '/i18n', __DIR__ . '/achievi18n' ];
 $wgExtensionMessagesFiles['AchievementsMagic'] = __DIR__ . '/Achievements.magic.php';
 $wgExtensionMessagesFiles['ManageAchievements'] = __DIR__ . '/Achievements.alias.php';
 
@@ -49,6 +50,8 @@ $wgAutoloadClasses['Achiev\\Achievement'] = __DIR__ . '/class/AchievementClass.p
 $wgAutoloadClasses['Achiev\\Counter'] = __DIR__ . '/class/CounterClass.php';
 // Token兑换码类
 $wgAutoloadClasses['Achiev\\Token'] = __DIR__ . '/class/Token.php';
+// Error收发错误类
+$wgAutoloadClasses['Achiev\\AchievError'] = __DIR__ . '/class/ErrorClass.php';
 // Echo模板类
 $wgAutoloadClasses['Achiev\\AchievPresentationModel'] = __DIR__ . '/class/PresentationModel.php';
 

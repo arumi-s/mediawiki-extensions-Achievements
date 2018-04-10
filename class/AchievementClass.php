@@ -233,7 +233,11 @@ class Achievement {
 			if ( $this->isRemovable() ) {
 				foreach ( $oldacs as $oldac ) {
 					if ( !$this->isValidStage( $oldac ) || !$this->isQualify( $maincount, $oldac ) ) {
-						$this->removeFrom( $user, $oldac );
+						try {
+							$this->removeFrom( $user, $oldac );
+						} catch ( \Exception $e ) {
+							$note .= '-failed';
+						}
 					}
 				}
 			}
@@ -241,7 +245,11 @@ class Achievement {
 				if ( $this->isQualify( $maincount, $threshold ) ) {
 					$pos = array_search( $threshold, $oldacs );
 					if ( $pos === false || is_null( $oldtss[$pos] ) ) {
-						$this->awardTo( $user, $threshold, $maincount );
+						try {
+							$this->awardTo( $user, $threshold, $maincount );
+						} catch ( \Exception $e ) {
+							$note .= '-failed';
+						}
 					}
 				}
 			}
@@ -252,13 +260,21 @@ class Achievement {
 				$note .= '-qualify';
 				if ( is_null( $maindate ) ) {
 					$note .= '-award';
-					$this->awardTo( $user, 0, $maincount );
+					try {
+						$this->awardTo( $user, 0, $maincount );
+					} catch ( \Exception $e ) {
+						$note .= '-failed';
+					}
 				}
 			} else {
 				$note .= '-dequalify';
 				if ( $this->isRemovable() && !is_null( $maindate ) ) {
 					$note .= '-remove';
-					$this->removeFrom( $user );
+					try {
+						$this->removeFrom( $user );
+					} catch ( \Exception $e ) {
+						$note .= '-failed';
+					}
 				}
 			}
 		}
@@ -267,27 +283,27 @@ class Achievement {
 	}
 
 	public function addStaticCountTo ( \User $user, &$count = 0 ) {
-		if ( $this->isBlocked( $user ) ) return false;
-		if ( !$this->isAwardable() || !$this->isActive() ) return false;
+		if ( $this->isBlocked( $user ) ) throw new AchievError( 'blocked-user' );
+		if ( !$this->isAwardable() || !$this->isActive() ) throw new AchievError( 'achiev-notawardable' );
 		$this->counter->updateHook( ['static', 'Achievement::addStaticCountTo'], $user, $count );
 		AchievementHandler::clearUserCache( $user );
 		return true;
 	}
 
 	public function awardStaticTo ( \User $user, $stage = 0, $count = 0 ) {
-		if ( $this->isBlocked( $user ) ) return false;
-		if ( !$this->isAwardable() || !$this->isActive() ) return false;
-		$s = $this->awardTo( $user, $stage, $count );
+		if ( $this->isBlocked( $user ) ) throw new AchievError( 'blocked-user' );
+		if ( !$this->isAwardable() || !$this->isActive() ) throw new AchievError( 'achiev-notawardable' );
+		$this->awardTo( $user, $stage, $count );
 		AchievementHandler::clearUserCache( $user );
-		return $s;
+		return true;
 	}
 
 	public function removeStaticFrom ( \User $user, $stage = 0 ) {
-		if ( $this->isBlocked( $user ) ) return false;
-		if ( !$this->isAwardable() || !$this->isActive() ) return false;
-		$s = $this->removeFrom( $user, $stage );
+		if ( $this->isBlocked( $user ) ) throw new AchievError( 'blocked-user' );
+		if ( !$this->isAwardable() || !$this->isActive() ) throw new AchievError( 'achiev-notawardable' );
+		$this->removeFrom( $user, $stage );
 		AchievementHandler::clearUserCache( $user );
-		return $s;
+		return true;
 	}
 
 	private function awardTo ( \User $user, $stage = 0, $setvalue = 0 ) {
@@ -297,7 +313,7 @@ class Achievement {
 				$id = $this->getStageName( $stage );
 				$setvalue = max( $setvalue, $stage );
 			} else {
-				return false;
+				throw new AchievError( 'invalid-stage' );
 			}
 		} else {
 			$id = $this->id;
@@ -314,7 +330,7 @@ class Achievement {
 				__METHOD__
 			);
 			if ( $already ) {
-				return 0;
+				throw new AchievError( 'achiev-conflict' );
 			}
 		}
 		
@@ -325,7 +341,7 @@ class Achievement {
 			__METHOD__
 		);
 		if ( $already ) {
-			return 0;
+			throw new AchievError( 'achiev-already' );
 		}
 		
 		$dbw->update(
@@ -342,21 +358,23 @@ class Achievement {
 				[ 'ac_user' => $user->getId(), 'ac_id' => $id, 'ac_count' => $setvalue, 'ac_date' => wfTimestamp( TS_MW ) ]
 			);
 		}
-		$success = $dbw->affectedRows() != 0;
-		if ( $success ) {
-			\Hooks::run( 'AchievementAward', [ $user, $this, $stage ] );
-			if ( self::$send_echo_events ) {
-				\EchoEvent::create( [
-					'type' => 'achiev-award',
-					'extra' => [
-						'achievid' => $id, 
-						'notifyAgent' => true,
-					],
-					'agent' => $user,
-				] );
-			}
+		$failed = $dbw->affectedRows() == 0;
+		if ( $failed ) {
+			throw new AchievError( 'award-failed' );
 		}
-		return $success;
+			
+		\Hooks::run( 'AchievementAward', [ $user, $this, $stage ] );
+		if ( self::$send_echo_events ) {
+			\EchoEvent::create( [
+				'type' => 'achiev-award',
+				'extra' => [
+					'achievid' => $id, 
+					'notifyAgent' => true,
+				],
+				'agent' => $user,
+			] );
+		}
+		return true;
 	}
 
 	private function removeFrom ( \User $user, $stage = 0 ) {
@@ -379,21 +397,23 @@ class Achievement {
 			);
 		}
 
-		$success = $dbw->affectedRows() != 0;
-		if ( $success ) {
-			\Hooks::run( 'AchievementRemove', [ $user, $this, $stage ] );
-			if ( self::$send_echo_events ) {
-				\EchoEvent::create( [
-					'type' => 'achiev-remove',
-					'extra' => [
-						'achievid' => $id,
-						'notifyAgent' => true,
-					],
-					'agent' => $user,
-				] );
-			}
+		$failed = $dbw->affectedRows() == 0;
+		if ( $failed ) {
+			throw new AchievError( 'remove-failed' );
 		}
-		return $success;
+
+		\Hooks::run( 'AchievementRemove', [ $user, $this, $stage ] );
+		if ( self::$send_echo_events ) {
+			\EchoEvent::create( [
+				'type' => 'achiev-remove',
+				'extra' => [
+					'achievid' => $id,
+					'notifyAgent' => true,
+				],
+				'agent' => $user,
+			] );
+		}
+		return true;
 	}
 
 	static public function suppressEchoEvents () {
