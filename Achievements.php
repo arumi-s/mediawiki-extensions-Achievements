@@ -10,7 +10,7 @@ namespace Achiev;
 
 if ( !defined( 'MEDIAWIKI' ) ) die();
 
-define( 'ACHIV_VERSION', '0.3.0' );
+define( 'ACHIV_VERSION', '0.3.1' );
 
 $wgExtensionCredits['parserhook'][] = array(
 	'path' => __FILE__,
@@ -61,6 +61,9 @@ $wgResourceModules['ext.achievement'] = array(
 	'remoteExtPath' => 'Achievements/src',
 	'scripts' => 'achievements.js',
 	'styles' => 'achievements.css',
+	'dependencies' => [
+		'jquery.tipsy'
+	],
 );
 
 // 在用户设定页面中显示成就列表

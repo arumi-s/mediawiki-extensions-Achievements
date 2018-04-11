@@ -303,7 +303,13 @@ class ExtAchievement {
 						global $wgUploadPath;
 						$id = $user->getId();
 						$avatar = new wAvatar( $id, 'm' );
-						$avatar = Html::rawElement( 'img', [ 'class' => 'useravatar', 'src' => $wgUploadPath . '/avatars/' . $avatar->getAvatarImage() ] );
+						$avatar = Html::rawElement(
+							'img',
+							[
+								'class' => 'useravatar',
+								'src' => $wgUploadPath . '/avatars/' . $avatar->getAvatarImage()
+							]
+						);
 						$html = new HtmlArmor( $avatar . HtmlArmor::getHtml( $html ) );
 					}
 

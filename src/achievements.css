@@ -11,3 +11,10 @@ img.useravatar {
 	border-radius: 50%;
 	margin-top: -0.3em;
 }
+.achievimage {
+	text-align: center;
+}
+.achievimage img {
+	height: 60px;
+	width: 60px;
+}

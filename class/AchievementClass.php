@@ -132,7 +132,12 @@ class Achievement {
 		if ( $plain ) {
 			return strip_tags( $text );
 		} else {
-			return \Html::openElement( 'a', [ 'class' => 'achievtitle', 'title' => $this->getDescMsg( $stage ) ] ) . $text;
+			if ( !is_null( $this->getConfig( 'image' ) ) ) {
+				$image = $this->getConfig( 'image' );
+			} else {
+				$image = null;
+			}
+			return \Html::openElement( 'a', [ 'class' => 'achievtitle', 'title' => $this->getDescMsg( $stage ), 'src' => $image ] ) . $text;
 		}
 	}
 
