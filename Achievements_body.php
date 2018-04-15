@@ -32,6 +32,8 @@ class ExtAchievement {
 
 	// 生成成就列表区块
 	static public function buildAchievBlock ( &$achiev, $tss = null, &$counts, $user ) {
+		global $wgLang, $wgAchievementsScoring;
+
 		$admin = is_null( $tss );
 		$block = Html::openElement( 'table', [ 'class' => 'achiev-item' ] );
 		$block .= Html::openElement( 'tr' );
@@ -59,25 +61,38 @@ class ExtAchievement {
 		$ativeStage = -1;
 		$achievers = [];
 		if ( !$achiev->isStatic() && $achiev->isStaged() ) {
-			if ( $achiev->isStageReversed() ) $thresholds = array_reverse( $thresholds );
-			$half = (int)ceil( count( $thresholds ) / 2 );
+			if ( $achiev->isStageReversed() ) {
+				$thresholds = array_reverse( $thresholds, true );
+				$half = count( $thresholds ) - (int)ceil( count( $thresholds ) / 2 );
+			} else {
+				$half = (int)ceil( count( $thresholds ) / 2 );
+			}
 			foreach ( $thresholds as $i => $threshold ) {
 				if ( $i == $half ) {
 					$stageBlocks .= '<br />';
 				}
 				if ( $admin || ( isset( $tss[$threshold] ) && $tss[$threshold] !== 0 ) ) {
+					$score = $wgAchievementsScoring ? $achiev->getStageScore( $threshold ) : 0;
 					$stageBlocks .= self::tooltip(
 						'div', $i + 1,
-						$achiev->getNameMsg( $threshold ) . "\n" . $achiev->getDescMsg( $threshold ),
+						$achiev->getNameMsg( $threshold ) . '<br />' .
+						$achiev->getDescMsg( $threshold ) . '<div class="achiev-note">' .
+						($score>0?wfMessage( 'achiev-award-score' )->rawParams( $score )->text() . '<br />':'') .
+						wfMessage( 'achiev-award-date' )->rawParams( $wgLang->userTimeAndDate( $tss[$threshold], $user ) )->text() . '</div>',
 						'achiev-block achiev-block-c'
 					);
+					;
 					$lastStage = $i;
 					$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), $threshold, $admin );
 				} elseif ( $ativeStage == -1 ) {
+					$score = $wgAchievementsScoring ? $achiev->getStageScore( $threshold ) : 0;
 					$ativeStage = $i;
 					$stageBlocks .= self::tooltip(
 						'div', $i + 1,
-						$achiev->getNameMsg( $threshold ) . "\n" . $achiev->getDescMsg( $threshold ),
+						$achiev->getNameMsg( $threshold ) . '<br />' .
+						$achiev->getDescMsg( $threshold ) . '<div class="achiev-note">' .
+						($score>0?wfMessage( 'achiev-award-score' )->rawParams( $score )->text() . '<br />':'') .
+						wfMessage( 'achiev-award-none' )->text() . '</div>',
 						'achiev-block achiev-block-a'
 					);
 					$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), $threshold, $admin );
@@ -96,9 +111,9 @@ class ExtAchievement {
 			$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), null, $admin );
 		}
 
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-stage', 'rowspan' => 4 ], $stageBlocks );
+		if ( $stageBlocks !== '' ) $block .= Html::rawElement( 'td', [ 'class' => 'achiev-stage', 'rowspan' => 4 ], $stageBlocks );
 		$block .= Html::openElement( 'tr' );
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-desc',  ] , $achiev->getDescMsg() );
+		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-desc',  ], $achiev->getDescMsg() );
 		$block .= Html::closeElement( 'tr' );
 		$block .= Html::openElement( 'tr' );
 		
@@ -150,7 +165,7 @@ class ExtAchievement {
 			) . Html::rawElement( 'div', [ 'class' => 'achiev-bartext' ], $progtext );
 		}
 		
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-prog',  ], $progBar );
+		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-prog' ], $progBar );
 		$block .= Html::closeElement( 'tr' );
 
 		$footnotes = [];
@@ -164,7 +179,6 @@ class ExtAchievement {
 			}
 			$activerange = $achiev->getConfig( 'activerange', false );
 			if ( !empty( $activerange ) ) {
-				global $wgLang;
 				$footnotes[] = self::tooltip(
 					'span',
 					wfMessage( 'achiev-config-activerange' )->text(),
@@ -173,6 +187,9 @@ class ExtAchievement {
 						empty( $activerange[1] ) ? '' : $wgLang->userTimeAndDate( $activerange[1], $user )
 					)->text()
 				);
+			}
+			if ( $achiev->isMultiple() ) {
+				$footnotes[] = self::noteTooltip( 'multiple' );
 			}
 			if ( $achiev->isRemovable() ) {
 				$footnotes[] = self::noteTooltip( 'removable' );
@@ -190,6 +207,16 @@ class ExtAchievement {
 			wfMessage( 'achiev-achievers-count-wrap' )->rawParams( implode( wfMessage( 'achiev-achievers-count-sep' )->text(), $achievers ) )->text(),
 			wfMessage( 'achiev-achievers-count-desc' )->text()
 		);
+
+		if ( !$achiev->isStaged() ) {
+			$score = $wgAchievementsScoring ? $achiev->getStageScore() : 0;
+			if ( $score > 0 ) $footnotes[] = wfMessage( 'achiev-award-score' )->rawParams( $score )->text();
+			if ( $admin || ( isset( $tss[0] ) && $tss[0] !== 0 ) ) {
+				$footnotes[] = wfMessage( 'achiev-award-date' )->rawParams( $wgLang->userTimeAndDate( $tss[0], $user ) )->text();
+			} else {
+				$footnotes[] = wfMessage( 'achiev-award-none' )->text();
+			}
+		}
 
 		$block .= Html::openElement( 'tr' );
 		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-note' ], implode( wfMessage( 'achiev-footnote-sep' )->text(), $footnotes ) );
@@ -329,7 +356,7 @@ class ExtAchievement {
 		if ( $wgUserProfileDisplay['achiev'] == false ) {
 			return true;
 		}
-		global $wgUser, $wgOut;
+		global $wgUser, $wgOut, $wgAchievementsScoring;
 
 		$output = '';
 		$po = '';
@@ -345,6 +372,22 @@ class ExtAchievement {
 			($usertitle !== false ? $usertitle : wfMessage( 'achievtitle-none' )->text()) . '</a></div>';
 		$po .= '<div><b>' . wfMessage( 'user-count-achiev-title' )->escaped() . '</b>' .
 			(count( AchievementHandler::getUserAchievIDs( $page->user ) )) . '</div>';
+		
+		if ( $wgAchievementsScoring ) {
+			$score = AchievementHandler::getUserScore( $page->user );
+			$level = AchievementHandler::Score2Level( $score );
+			
+			$progPre = AchievementHandler::Level2Score( $level );
+			$progBot = AchievementHandler::Level2Score( $level + 1 );
+			$progTop = $score;
+			$percent = round( max( 0, min( ($progTop - $progPre) / ($progBot - $progPre), 1 ) ) * 100, 0 );
+			$progtext = wfMessage( 'achiev-progtext' )->rawParams( $progTop, $progBot, $percent )->text();
+			
+			$po .= '<div><b>' . wfMessage( 'user-achiev-level' )->escaped() . '</b>' .
+				$level . '</div>';
+			$po .= '<div><b>' . wfMessage( 'user-achiev-score' )->escaped() . '</b>' .
+				$progtext . '</div>';
+		}
 		
 		$output .= '</div><div class="visualClear"></div></div></div><div class="visualClear"></div>'.
 		'<div class="profile-info-container">' . $po . '</div>';

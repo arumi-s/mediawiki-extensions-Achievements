@@ -3,7 +3,7 @@
 		var $tooltips = $( '.note-tooltip' );
 		if ( $tooltips.length ) {
 			mw.loader.using( 'jquery.tipsy', function () {
-				$tooltips.tipsy( { gravity: 'n' } );
+				$tooltips.tipsy( { gravity: 'n', html: true } );
 			} );
 		}
 	} );

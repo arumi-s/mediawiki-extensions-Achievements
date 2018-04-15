@@ -30,16 +30,14 @@ class AchievementHandler {
 		return self::$list[$id];
 	}
 
-	static public function &AchievementFromStagedID ( $id, &$stage = 0 ) {
-		global $wgAchievementsConfigs;
+	static public function &AchievementFromStagedID ( $id, &$stage = 0, $count = 0 ) {
 		if ( $id === '' ) {
 			$err = false;
 			return $err;
 		}
 
-		list ( $name, $stage ) = explode( ':', $id, 2 ) + [ '', false ];
+		list ( $name, $stage, $count ) = Achievement::sepStageName( $id );
 
-		$stage = intval( $stage );
 		return self::AchievementFromID( $name );
 	}
 
@@ -94,7 +92,7 @@ class AchievementHandler {
 			$list = self::AchievementsFromReset( false );
 
 			foreach ( $list as &$achiev ) {
-				if ( !$achiev->isStatic() && $achiev->isActive() ) {
+				if ( !$achiev->isStatic() && $achiev->isActive() && !$achiev->isMultiple() ) {
 					$achiev->updateAchiev( $user, false );
 				}
 			}
@@ -123,7 +121,7 @@ class AchievementHandler {
 		}
 		
 		$stage = 0;
-		$achiev = \Achiev\AchievementHandler::AchievementFromStagedID( $stagename, $stage );
+		$achiev = self::AchievementFromStagedID( $stagename, $stage );
 		if ( $achiev === false ) {
 			return [];
 		}
@@ -161,7 +159,7 @@ class AchievementHandler {
 			$cache::TTL_HOUR * 24, // Cache for 24 hours
 			function ( $oldValue, &$ttl, &$setOpts ) use ( $stagename ) { // Function to generate the value on cache miss
 				$stage = 0;
-				$achiev = \Achiev\AchievementHandler::AchievementFromStagedID( $stagename, $stage );
+				$achiev = self::AchievementFromStagedID( $stagename, $stage );
 				if ( $achiev === false ) {
 					return 0;
 				}
@@ -221,10 +219,10 @@ class AchievementHandler {
 
 		$list = [];
 		foreach ( $data as $id => $ts ) {
-			list ( $name, $stage ) = explode( ':', $id, 2 ) + [ '', false ];
-			$ac = self::AchievementFromID( $name );
-			if ( $ac === false ) continue;
-			if ( $stage === false ) {
+			$achiev = self::AchievementFromStagedID( $id, $stage, $count );
+			if ( $achiev === false || $count > 0 ) continue;
+			$name = $achiev->getID();
+			if ( $stage == 0 ) {
 				$list[$name] = [ $ts ];
 			} else {
 				if ( !isset( $list[$name] ) ) $list[$name] = [];
@@ -255,6 +253,35 @@ class AchievementHandler {
 			return $data;
 		}
 		return [];
+	}
+
+	static public function getUserScore ( $user ) {
+		if ( !($user instanceof \User) ) {
+			return 0;
+		}
+
+		$aclist = AchievementHandler::getUserAchievs( $user );
+		$score = 0;
+		foreach ( $aclist as $aid => $tss ) {
+			$ac = AchievementHandler::AchievementFromID( $aid );
+			foreach ( $tss as $stage => $ts ) {
+				$score += $ac->getStageScore( $stage );
+			}
+		}
+		return $score;
+	}
+
+	static public function Score2Level ( $score = 0 ) {
+		$level = 0;
+		while ( $level < 99 && $score >= Self::Level2Score( $level + 1 ) ) {
+			++$level;
+		}
+		return $level;
+	}
+	
+	static public function Level2Score ( $level = 0 ) {
+		$level = max( 0, min( 99, $level ) );
+		return $level * ( $level + 2 ) * 10;
 	}
 
 	static public function quickCheckUserAchiev ( $user, $id ) {

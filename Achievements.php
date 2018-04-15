@@ -10,7 +10,7 @@ namespace Achiev;
 
 if ( !defined( 'MEDIAWIKI' ) ) die();
 
-define( 'ACHIV_VERSION', '0.3.1' );
+define( 'ACHIV_VERSION', '0.4.0' );
 
 $wgExtensionCredits['parserhook'][] = array(
 	'path' => __FILE__,
@@ -26,6 +26,7 @@ $wgAchievementsIconStaged = $wgLogo;
 $wgAchievementsIconNormal = $wgLogo;
 $wgAchievementsTokenLength = 10;
 $wgAchievementsConfigs = [];
+$wgAchievementsScoring = false;
 
 // 加载设定
 include_once( __DIR__ . '/Achievements.settings.php' );

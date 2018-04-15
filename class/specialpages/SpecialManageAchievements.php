@@ -19,8 +19,9 @@ class SpecialManageAchievements extends SpecialPage {
 	const MODE_USER = 6;
 	const MODE_MSG = 7;
 	const MODE_RANKING = 8;
-	const MODE_TOKEN = 9;
-	const MODE_TOKENS = 10;
+	const MODE_SCORING = 9;
+	const MODE_TOKEN = 20;
+	const MODE_TOKENS = 21;
 	const MODE_RANDOM = 99;
 
 	function __construct() {
@@ -63,6 +64,9 @@ class SpecialManageAchievements extends SpecialPage {
 			case 'ranking':
 			case self::MODE_RANKING:
 				return self::MODE_RANKING;
+			case 'scoring':
+			case self::MODE_SCORING:
+				return self::MODE_SCORING;
 			case 'token':
 			case self::MODE_TOKEN:
 				return self::MODE_TOKEN;
@@ -97,6 +101,7 @@ class SpecialManageAchievements extends SpecialPage {
 			'user',
 			'msg',
 			'ranking',
+			'scoring',
 			'token',
 			'tokens',
 		];
@@ -254,6 +259,8 @@ class SpecialManageAchievements extends SpecialPage {
 				) . '</textarea>' );
 				break;
 			case self::MODE_RANKING:
+				global $wgAchievementsScoring;
+
 				$out->setPageTitle( $this->msg( 'manageachievements-mode-ranking' ) );
 				$dbw = wfGetDB( DB_SLAVE );
 
@@ -265,12 +272,70 @@ class SpecialManageAchievements extends SpecialPage {
 					[ 'ORDER BY' => 'ac_count DESC', 'GROUP BY' => 'ac_user', 'LIMIT' => 100 ]
 				);
 				if ( $res ) {
-					$out->addHTML( '<ol>' );
+					$out->addHTML(
+						Html::openElement( 'table', [ 'class' => 'wikitable sortable' ] ) .
+						Html::openElement( 'tr' ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-ranking-user' )->text() ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-ranking-achiev' )->text() ) .
+						( $wgAchievementsScoring ?
+							Html::rawElement( 'th', [], $this->msg( 'manage-achiev-ranking-score' )->text() ) .
+							Html::rawElement( 'th', [], $this->msg( 'manage-achiev-ranking-level' )->text() )
+							: ''
+						) .
+						Html::closeElement( 'tr' )
+					);
 					while ( $row = $res->fetchRow() ) {
-						$out->addHTML('<li>'.User::whoIs( $row['ac_user'] ) . ': ' . $row['ac_count'] .'</li>' );
+						$cuser = User::newFromId( $row['ac_user'] );
+						$uscore = AchievementHandler::getUserScore( $cuser );
+						$ulevel = AchievementHandler::Score2Level( $uscore );
+						$out->addHTML(
+							Html::openElement( 'tr' ) .
+							Html::rawElement( 'td', [], $cuser->getName() ) .
+							Html::rawElement( 'td', [], $row['ac_count'] ) .
+							( $wgAchievementsScoring ?
+								Html::rawElement( 'td', [], $uscore ) .
+								Html::rawElement( 'td', [], $ulevel )
+								: ''
+							) .
+							Html::closeElement( 'tr' )
+						);
 					}
-					$out->addHTML( '</ol>' );
+					$out->addHTML( Html::closeElement( 'table' ) );
 				}
+				break;
+			case self::MODE_SCORING:
+				global $wgAchievementsScoring;
+
+				$out->setPageTitle( $this->msg( 'manageachievements-mode-scoring' ) );
+				
+				if ( !$wgAchievementsScoring ) {
+					$out->addHTML( $this->msg( 'manage-achiev-disable-scoring' ) );
+					break;
+				}
+				$allachievs = AchievementHandler::AchievementsFromAll();
+				
+				$list = [];
+				foreach ( $allachievs as &$achiev ) {
+					$thresholds = $achiev->getConfig('threshold', 1);
+					if ( $achiev->isStaged() ) {
+						foreach ( $thresholds as $stage ) {
+							$c = $achiev->getStageScore($stage);
+							if ( $c !== false ) $list[$achiev->getStageName($stage)] = $c;
+						}
+					} else {
+						$c = $achiev->getStageScore();
+						if ( $c !== false ) $list[$achiev->getStageName()] = $c;
+					}
+				}
+				arsort($list, SORT_NUMERIC);
+				$out->addHTML( '<ol>' );
+				foreach ( $list as $stagename => $score ) {
+					$achiev = AchievementHandler::AchievementFromStagedID( $stagename, $stage );
+					if ( $achiev !== false ) {
+						$out->addHTML( '<li>'.$achiev->getNameMsg( $stage ) . $this->msg( 'parentheses' )->rawParams( $achiev->getDescMsg( $stage ) )->text() .': '. $score .'</li>' );
+					}
+				}
+				$out->addHTML( '</ol>' );
 				break;
 			case self::MODE_TOKEN:
 				$out->setPageTitle( $this->msg( 'manageachievements-mode-token' ) );

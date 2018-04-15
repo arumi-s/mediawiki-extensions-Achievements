@@ -32,8 +32,15 @@ class Achievement {
 		return $this->id;
 	}
 
-	public function getStageName ( $stage, $sep = ':' ) {
+	public function getStageName ( $stage = 0, $sep = ':' ) {
 		return $this->id . ( $stage > 0 ? $sep . $stage : '' );
+	}
+
+	public static function sepStageName ( $stagename = '', $sep = ':' ) {
+		$list = explode( ':', $stagename, 3 ) + [ '', 0, 0 ];
+		$list[1] = intval( $list[1] );
+		$list[2] = intval( $list[2] );
+		return $list;
 	}
 
 	public function getConfig ( $index = null, $default = null ) {
@@ -53,19 +60,23 @@ class Achievement {
 	}
 
 	public function getReset () {
-		return $this->config['reset'];
+		return $this->getConfig( 'reset', false );
 	}
 
 	public function isAwardable () {
-		return $this->config['awardable'];
+		return $this->getConfig( 'awardable', false );
 	}
 
 	public function isRemovable () {
-		return $this->config['removable'];
+		return $this->getConfig( 'removable', false );
+	}
+
+	public function isMultiple () {
+		return $this->getConfig( 'multiple', false ) && ( $this->getReset() || $this->isStatic () );
 	}
 
 	public function isActive () {
-		return $this->config['active'] && $this->inActiveRange();
+		return $this->getConfig( 'active', false ) && $this->inActiveRange();
 	}
 
 	public function inActiveRange () {
@@ -89,7 +100,7 @@ class Achievement {
 	}
 
 	public function isStaged () {
-		return is_array( $this->config['threshold'] );
+		return is_array( $this->getConfig( 'threshold', false ) );
 	}
 
 	public function isValidStage ( $stage = 0 ) {
@@ -123,6 +134,96 @@ class Achievement {
 			if ( !is_null( $newthreshold ) && $newthreshold > 0 ) return $newthreshold;
 			else return $threshold;
 		}
+	}
+
+	public function getStageScore ( $stage = 0, $total = false ) {
+		$dscore = 0;
+		if ( $this->isStaged() ) {
+			if ( !$this->isValidStage( $stage ) ) return 0;
+			if ( !$total ) {
+				// 非排名的多阶段成就的分数需要减去前面所有阶段分数的总和，防止各个阶段重复累积太多分数
+				$thresholds = $this->getConfig( 'threshold' );
+				$i = array_search( $stage, $thresholds, true ) + ( $this->isStageReversed() ? 1: -1 );
+				if ( isset( $thresholds[$i] ) ) $dscore = Self::getStageScore( $thresholds[$i], true );
+			}
+		} else {
+			 $stage = $this->getConfig( 'threshold' );
+		}
+		if ( $stage == 0 ) return 0;
+
+		$uscore = 0; // 底分
+		$multiply = $this->getConfig( 'scoremul', 0 ); // 管理员设定的乘数
+
+		if ( $this->getCounterConfig('init', false) === 'current' ) {
+			$icurr = 10; // 持续成就buff，初始值为current的排名成就需要长时间的努力
+			$frate = 1; // 初始值为current不受更新频率影响
+			$trate = 1; // 初始值为current不受更新频率影响
+		} else {
+			$icurr = 1; // 初始值为其他的成就
+			$frate = 1; // 更新频率debuff，排名成就更新频率越高颁发次数越多，越容易获得
+			$trate = 1; // 更新频率buff，非排名成就更新频率越高达成成就条件可用的时间越少，越难获得
+			switch( $this->getReset() ){
+				case 'd': // 日更
+					$frate = 0.1;
+					$trate = 10;
+					break;
+				case 'w': // 周更
+					$frate = 0.5;
+					$trate = 6;
+					break;
+				case 'm': // 月更
+					$frate = 2;
+					$trate = 4;
+					break;
+			}
+		}
+
+		$rate = 0.5; // 词条筛选buff，词条筛选条件越多成就越难
+		if ($this->getCounterConfig('cat', false)||$this->getCounterConfig('ns', false)){
+			$rate = 1.5; // 以分类或命名空间筛选
+		}
+		if ($this->getCounterConfig('page', false)){
+			$rate = 2; // 以页面名称筛选，假设仅有少量符合的页面
+		}
+
+		switch( $this->getType() ){
+			case 'static':
+				 // 静态成就给予基本分，强烈建议设定scoremul来控制此分数
+				if ( $this->isStaged() ) {
+					$uscore = 5 * sqrt($stage); // 多阶成就根据给分阶段给分
+				} else {
+					$uscore = 1; // 单阶成就给1分
+				}
+				break;
+			case 'watch':
+				$uscore = 0; // 以上类型由于太容易、很难控制等原因不给予分数
+				break;
+			case 'viewcount': case 'viewtop': case 'random':
+				$uscore += 1; // 半随机成就勉强给1分
+				break;
+			case 'editcount':
+				$uscore += $trate * $rate * 5 * sqrt($stage) / 2 - $dscore;
+				break;
+			case 'edittop':
+				$uscore += $icurr * $frate * $rate * 100 / $stage;
+				break;
+			case 'friendcount': case 'foecount':
+				$uscore += $trate * 2 * 5 * sqrt($stage) - $dscore;
+				break;
+			case 'friendtop': case 'foetop':
+				$uscore += $icurr * $frate * 5 / $stage;
+				break;
+			case 'usergroup': 
+				$uscore += 10;
+				break;
+			case 'registerday': 
+				$uscore += $stage / 50 - $dscore;
+				break;
+			default : 
+				$uscore += 1;
+				break;
+		}
+		return max(0, ceil( $multiply * $uscore ) );
 	}
 
 	public function getAfterLinkMsg ( $stage = 0, $plain = true ) {
@@ -229,9 +330,9 @@ class Achievement {
 			$oldacs = array();
 			$oldtss = array();
 			if ( $res ) {
-				$len = strlen( $this->id ) + 1;
 				while( $row = $res->fetchRow() ) {
-					$oldacs[] = intval( substr( $row['ac_id'], $len ) );
+					list( , $stage ) = self::sepStageName( $row['ac_id'] );
+					$oldacs[] = $stage;
 					$oldtss[] = wfTimestampOrNull( TS_UNIX, $row['ac_date'] );
 				}
 			}
@@ -249,7 +350,7 @@ class Achievement {
 			foreach ( $this->config['threshold'] as $threshold ) {
 				if ( $this->isQualify( $maincount, $threshold ) ) {
 					$pos = array_search( $threshold, $oldacs );
-					if ( $pos === false || is_null( $oldtss[$pos] ) ) {
+					if ( $this->isMultiple() || $pos === false || is_null( $oldtss[$pos] ) ) {
 						try {
 							$this->awardTo( $user, $threshold, $maincount );
 						} catch ( \Exception $e ) {
@@ -263,7 +364,7 @@ class Achievement {
 			$threshold = $this->config['threshold'];
 			if ( $this->isQualify( $maincount, $threshold ) ) {
 				$note .= '-qualify';
-				if ( is_null( $maindate ) ) {
+				if ( $this->isMultiple() || is_null( $maindate ) ) {
 					$note .= '-award';
 					try {
 						$this->awardTo( $user, 0, $maincount );
@@ -315,13 +416,13 @@ class Achievement {
 		$setvalue = (int)$setvalue;
 		if ( $this->isStaged() ) {
 			if ( $this->isValidStage( $stage ) ) {
-				$id = $this->getStageName( $stage );
+				$wid = $id = $this->getStageName( $stage );
 				$setvalue = max( $setvalue, $stage );
 			} else {
 				throw new AchievError( 'invalid-stage' );
 			}
 		} else {
-			$id = $this->id;
+			$wid = $id = $this->id;
 			$setvalue = max( $setvalue, $this->config['threshold'] );
 		}
 		$dbw = wfGetDB( DB_MASTER );
@@ -345,14 +446,34 @@ class Achievement {
 			[ 'ac_user' => $user->getId(), 'ac_id' => $id, 'ac_date IS NOT NULL' ],
 			__METHOD__
 		);
-		if ( $already ) {
-			throw new AchievError( 'achiev-already' );
+
+		if ( $this->isMultiple() ) {
+			if ( $already ) {
+				if ( !$this->isStaged() ) $wid .= ':';
+				$previd = $dbw->selectField(
+					'achievements',
+					[ 'ac_id' ],
+					[ 'ac_user' => $user->getId(), 'ac_id' . $dbw->buildLike( $wid . ':', $dbw->anyString() ), 'ac_date IS NOT NULL' ],
+					__METHOD__,
+					[ 'ORDER BY' => 'ac_date DESC' ]
+				);
+				if ( $previd === false ) {
+					$wid .= ':1';
+				} else {
+					list( , , $prev ) = self::sepStageName( $previd );
+					$wid .= ':' . ( $prev + 1 );
+				}
+			}
+		} else {
+			if ( $already ) {
+				throw new AchievError( 'achiev-already' );
+			}
 		}
 		
 		$dbw->update(
 			'achievements',
 			[ 'ac_date' => wfTimestamp( TS_MW ) ],
-			[ 'ac_user' => $user->getId(), 'ac_id' => $id ],
+			[ 'ac_user' => $user->getId(), 'ac_id' => $wid ],
 			__METHOD__,
 			[ 'LIMIT' => 1 ]
 		);
@@ -360,7 +481,7 @@ class Achievement {
 		if ( $dbw->affectedRows() == 0 ) {
 			$dbw->insert(
 				'achievements',
-				[ 'ac_user' => $user->getId(), 'ac_id' => $id, 'ac_count' => $setvalue, 'ac_date' => wfTimestamp( TS_MW ) ]
+				[ 'ac_user' => $user->getId(), 'ac_id' => $wid, 'ac_count' => $setvalue, 'ac_date' => wfTimestamp( TS_MW ) ]
 			);
 		}
 		$failed = $dbw->affectedRows() == 0;
@@ -401,8 +522,16 @@ class Achievement {
 				[ 'LIMIT' => 1 ]
 			);
 		}
+		$aff = $dbw->affectedRows();
 
-		$failed = $dbw->affectedRows() == 0;
+		if ( $this->isMultiple() ) {
+			$dbw->delete(
+				'achievements',
+				[ 'ac_user' => $user->getId(), 'ac_id' . $dbw->buildLike( $id . ( $this->isStaged()?'':':' ) . ':', $dbw->anyString() ) ],
+				__METHOD__
+			);
+		}
+		$failed = $aff + $dbw->affectedRows() == 0;
 		if ( $failed ) {
 			throw new AchievError( 'remove-failed' );
 		}
@@ -433,6 +562,8 @@ class Achievement {
 		return [
 			'reset' => false,
 			'threshold' => 1,
+			'scoremul' => 1,
+			'multiple' => false,
 			'exclude' => false,
 			'removable' => false,
 			'awardable' => false,
