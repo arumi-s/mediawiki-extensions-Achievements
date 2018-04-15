@@ -30,7 +30,7 @@ class AchievementHandler {
 		return self::$list[$id];
 	}
 
-	static public function &AchievementFromStagedID ( $id, &$stage = 0, $count = 0 ) {
+	static public function &AchievementFromStagedID ( $id, &$stage = 0, &$count = 0 ) {
 		if ( $id === '' ) {
 			$err = false;
 			return $err;
