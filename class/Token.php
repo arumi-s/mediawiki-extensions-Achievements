@@ -30,7 +30,7 @@ class Token {
 		return wfMemcKey( 'achiev', 't', $t );
 	}
 
-	public static function getToken( $user, $achiev, $stage = 0, $addvalue = null, $target = null, $life = 0 ) {
+	public static function getToken( $user, $achiev, $stage = 0, $opt ) {
 		global $wgAchievementsTokenLength;
 		if ( $wgAchievementsTokenLength <= 0 ) return false;
 		if ( $user->isAnon() || $user->isBlocked() || !$user->isAllowed( 'manageachievements' ) ) return false;
@@ -46,13 +46,17 @@ class Token {
 			'user' => $user->getId(),
 			'achiev' => $achiev->getStageName( $stage ),
 		];
-		if ( !is_null( $addvalue ) ) {
-			$data['count'] = $addvalue;
+		if ( isset( $opt['count'] ) && !is_null( $opt['count'] ) ) {
+			$data['count'] = $opt['count'];
 		}
-		if ( $target instanceof \User && !$target->isAnon() ) {
-			$data['target'] = $target->getId();
+		if ( isset( $opt['limit'] ) && !is_null( $opt['limit'] ) ) {
+			$data['limit'] = $opt['limit'];
 		}
-		$cache->set( $key, $data, $life );
+		if ( isset( $opt['target'] ) && $opt['target'] instanceof \User && !$opt['target']->isAnon() ) {
+			$data['target'] = $opt['target']->getId();
+		}
+		$data['time'] = isset( $opt['time'] ) ? $opt['time'] : 0;
+		$cache->set( $key, $data, $data['time'] );
 
 		return $token;
 	}
@@ -121,8 +125,17 @@ class Token {
 		} else {
 			$achiev->awardStaticTo( $user, $stage );
 		}
-		$cache->delete( $key );
-
+		if ( isset( $data['limit'] ) ) {
+			--$data['limit'];
+			if ( $data['limit'] <= 0 ) {
+				$cache->delete( $key );
+			} else {
+				$cache->set( $key, $data, isset( $data['time'] ) ? $data['time'] : 0 );
+			}
+		} else {
+			$cache->delete( $key );
+		}
+		
 		return [$achiev, $stage, $count];
 	}
 

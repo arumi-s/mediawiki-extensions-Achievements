@@ -371,6 +371,7 @@ class SpecialManageAchievements extends SpecialPage {
 						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-user' )->text() ) .
 						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-target' )->text() ) .
 						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-count' )->text() ) .
+						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-limit' )->text() ) .
 						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-exptime' )->text() ) .
 						Html::closeElement( 'tr' )
 					);
@@ -391,6 +392,11 @@ class SpecialManageAchievements extends SpecialPage {
 						}
 						if ( isset( $data['count'] ) ) {
 							$out->addHTML( Html::rawElement( 'td', [], $data['count'] ) );
+						} else{
+							$out->addHTML( Html::rawElement( 'td', [], '' ) );
+						}
+						if ( isset( $data['limit'] ) ) {
+							$out->addHTML( Html::rawElement( 'td', [], $data['limit'] ) );
 						} else{
 							$out->addHTML( Html::rawElement( 'td', [], '' ) );
 						}
@@ -442,7 +448,7 @@ class SpecialManageAchievements extends SpecialPage {
 			'user' => array(
 				'label-message' => 'manage-achiev-user',
 				'class' => 'HTMLTextField',
-				'default' => $this->getUser()->getName(),
+				'default' => '',
 			),
 		);
 
@@ -473,6 +479,11 @@ class SpecialManageAchievements extends SpecialPage {
 				'class' => 'HTMLTextField',
 				'default' => '',
 			),
+			'limit' => array(
+				'label-message' => 'manage-achiev-token-limit',
+				'class' => 'HTMLTextField',
+				'default' => '1',
+			),
 			'time' => array(
 				'label-message' => 'manage-achiev-token-time',
 				'class' => 'HTMLTextField',
@@ -500,7 +511,7 @@ class SpecialManageAchievements extends SpecialPage {
 				$res = $dbw->select(
 					'achievements',
 					[ 'ac_user', 'ac_count' ],
-					[ 'ac_id' => $id, 'ac_count>0' ],
+					[ 'ac_id' => $id, 'ac_count <> 0' ],
 					__METHOD__,
 					[ 'ORDER BY' => 'ac_count DESC', 'LIMIT' => 200 ]
 				);
@@ -575,28 +586,33 @@ class SpecialManageAchievements extends SpecialPage {
 			$stagename = trim( $data['achiev'] );
 			$achiev = AchievementHandler::AchievementFromStagedID( $stagename, $stage );
 			if ( $achiev ) {
-				if ( !empty( $data['target'] ) ) $target = User::newFromName( $data['target'] );
-				else $target = null;
+				$opt = [];
+				if ( !empty( $data['target'] ) ) $opt['target'] = User::newFromName( $data['target'] );
 
-				if ( !empty( $data['count'] ) ) $count = intval( $data['count'] );
-				else $count = null;
+				if ( !empty( $data['count'] ) ) $opt['count'] = intval( $data['count'] );
 
-				if ( !empty( $data['time'] ) ) $time = intval( $data['time'] );
-				else $time = 86400;
+				if ( !empty( $data['limit'] ) ) $opt['limit'] = max( 1, intval( $data['limit'] ) );
+				else $opt['limit'] = 1;
+
+				if ( !empty( $data['time'] ) ) $opt['time'] = intval( $data['time'] );
+				else $opt['time'] = 86400;
 				
-				$token = Token::getToken( $this->getUser(), $achiev, $stage, $count, $target, $time );
+				$token = Token::getToken( $this->getUser(), $achiev, $stage, $opt );
 				if ( $token ) {
-					if ( $target instanceof \User ) {
-						$this->successMessage .= $this->msg( 'manage-achiev-token-user' )->parse() . $target->getName() . '<br />';
+					if ( $opt['target'] instanceof \User ) {
+						$this->successMessage .= $this->msg( 'manage-achiev-token-user' )->parse() . $opt['target']->getName() . '<br />';
 					}
-					if ( !is_null( $count ) ) {
-						$this->successMessage .= $this->msg( 'manage-achiev-token-count' )->parse() . $count . '<br />';
+					if ( isset( $opt['count'] ) ) {
+						$this->successMessage .= $this->msg( 'manage-achiev-token-count' )->parse() . $opt['count'] . '<br />';
 					}
-					if ( !is_null( $time ) ) {
-						$this->successMessage .= $this->msg( 'manage-achiev-token-time' )->parse() . $time . '<br />';
+					if ( isset( $opt['limit'] ) ) {
+						$this->successMessage .= $this->msg( 'manage-achiev-token-limit' )->parse() . $opt['limit'] . '<br />';
+					}
+					if ( isset( $opt['time'] ) ) {
+						$this->successMessage .= $this->msg( 'manage-achiev-token-time' )->parse() . $opt['time'] . '<br />';
 					}
 					$this->successMessage .= Html::element( 'input', ['type' =>'text', 'value' => $token->toString() ] ). '<br />';
-					$this->successMessage .= Html::element( 'a', ['target' =>'_blank', 'href' => $token->toUrl() ], $token->toUrl() ). '<br />';;
+					$this->successMessage .= Html::element( 'a', ['target' =>'_blank', 'href' => $token->toUrl() ], $token->toUrl() ). '<br />';
 				} else {
 					if ( $achiev->isAwardable() ) {
 						return $this->msg( 'manage-achiev-token-fail' )->parse();

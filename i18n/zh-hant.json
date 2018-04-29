@@ -5,6 +5,7 @@
 	"manageachievements" : "管理成就",
 	"redeemachievement" : "兌換成就",
 
+	"right-manageachievements" : "管理成就",
 	"prefs-achievements" : "頭銜及成就",
 	"prefs-achievtitle" : "頭銜",
 	"pref-achievtitle" : "選擇頭銜",
@@ -50,6 +51,7 @@
 	"manage-achiev-tokens-user" : "頒發用戶",
 	"manage-achiev-tokens-target" : "目標用戶",
 	"manage-achiev-tokens-count" : "計數增加",
+	"manage-achiev-tokens-limit" : "次數限制",
 	"manage-achiev-tokens-exptime" : "過期時間",
 
 	"redeem-achiev-token-section" : "請輸入兌換碼",

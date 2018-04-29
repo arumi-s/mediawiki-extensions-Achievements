@@ -5,6 +5,7 @@
 	"manageachievements" : "Manage Achievements",
 	"redeemachievement" : "Redeem Achievement",
 
+	"right-manageachievements" : "Manage Achievements",
 	"prefs-achievements" : "Titles and Achievements",
 	"prefs-achievtitle" : "Titles",
 	"pref-achievtitle" : "Select Your Title",
@@ -50,6 +51,7 @@
 	"manage-achiev-tokens-user" : "Issued by",
 	"manage-achiev-tokens-target" : "Target",
 	"manage-achiev-tokens-count" : "Increment",
+	"manage-achiev-tokens-limit" : "Redeem Limit",
 	"manage-achiev-tokens-exptime" : "Expiration Time",
 	
 	"redeem-achiev-token-section" : "Please Enter A Redeem Token",
