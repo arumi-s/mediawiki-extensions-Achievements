@@ -100,6 +100,7 @@
 	"achiev-achievers-count-mystery" : "??",
 	"achiev-award-score" : "Score: $1",
 	"achiev-award-date" : "Accomplish Date: $1",
+	"achiev-award-date-multi" : "( $1 Times )",
 	"achiev-award-none" : "Unacommpolished",
 	
 	"echo-category-title-achiev" : "Achievements",

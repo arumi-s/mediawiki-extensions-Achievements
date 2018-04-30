@@ -71,14 +71,16 @@ class ExtAchievement {
 				if ( $i == $half ) {
 					$stageBlocks .= '<br />';
 				}
-				if ( $admin || ( isset( $tss[$threshold] ) && $tss[$threshold] !== 0 ) ) {
+				if ( $admin || isset( $tss[$threshold] ) ) {
 					$score = $wgAchievementsScoring ? $achiev->getStageScore( $threshold ) : 0;
 					$stageBlocks .= self::tooltip(
 						'div', $i + 1,
 						$achiev->getNameMsg( $threshold ) . '<br />' .
 						$achiev->getDescMsg( $threshold ) . '<div class="achiev-note">' .
 						($score>0?wfMessage( 'achiev-award-score' )->rawParams( $score )->text() . '<br />':'') .
-						wfMessage( 'achiev-award-date' )->rawParams( $wgLang->userTimeAndDate( $tss[$threshold], $user ) )->text() . '</div>',
+						wfMessage( 'achiev-award-date' )->rawParams(
+							'<br />' . self::dateList( $wgLang, $user, $tss[$threshold] )
+						)->text() . '</div>',
 						'achiev-block achiev-block-c'
 					);
 					;
@@ -126,7 +128,7 @@ class ExtAchievement {
 				if ( $ativeStage == -1 ) $ativeStage = $lastStage;
 				$threshold = $thresholds[$ativeStage];
 				$stagename = $achiev->getID();
-				$nowcomplete = $admin || ( isset( $tss[$threshold] ) && $tss[$threshold] !== 0 );
+				$nowcomplete = $admin || ( isset( $tss[$threshold] ) && !$achiev->isMultiple() );
 				if ( $realts ) {
 					if ( $nowcomplete ) {
 						$stagename = $achiev->getStageName( $threshold );
@@ -141,7 +143,7 @@ class ExtAchievement {
 				}
 			} else {
 				$stagename = $achiev->getID();
-				$nowcomplete = $admin || ( isset( $tss[0] ) && $tss[0] !== 0 );
+				$nowcomplete = $admin || ( isset( $tss[0] ) && !$achiev->isMultiple() );
 				if ( $realts ) {
 					if ( $nowcomplete ) {
 						$progBot = $progTop = max(isset( $counts[$stagename] ) ? $counts[$stagename] : 0, 1);
@@ -211,8 +213,16 @@ class ExtAchievement {
 		if ( !$achiev->isStaged() ) {
 			$score = $wgAchievementsScoring ? $achiev->getStageScore() : 0;
 			if ( $score > 0 ) $footnotes[] = wfMessage( 'achiev-award-score' )->rawParams( $score )->text();
-			if ( $admin || ( isset( $tss[0] ) && $tss[0] !== 0 ) ) {
-				$footnotes[] = wfMessage( 'achiev-award-date' )->rawParams( $wgLang->userTimeAndDate( $tss[0], $user ) )->text();
+			if ( $admin || isset( $tss[0] ) ) {
+				if ( isset( $tss[0] ) && is_array( $tss[0] ) && count( $tss[0] ) > 1 ) {
+					$footnotes[] = self::tooltip (
+						'span',
+						wfMessage( 'achiev-award-date' )->rawParams(  )->text(),
+						self::dateList( $wgLang, $user, $tss[0] )
+					);
+				} else {
+					$footnotes[] = wfMessage( 'achiev-award-date' )->rawParams( self::dateList( $wgLang, $user, $tss[0] ) )->text();
+				}
 			} else {
 				$footnotes[] = wfMessage( 'achiev-award-none' )->text();
 			}
@@ -224,6 +234,16 @@ class ExtAchievement {
 		$block .= Html::closeElement( 'table' );
 		
 		return $block;
+	}
+
+	static public function dateList ( $lang, $user, $ts ) {
+		if ( is_array( $ts ) ) {
+			foreach( $ts as &$t ) {
+				$t = $lang->userTimeAndDate( $t, $user );
+			}
+			return implode('<br />', $ts);
+		}
+		return $lang->userTimeAndDate( $ts, $user );
 	}
 
 	static public function noteTooltip ( $name ) {

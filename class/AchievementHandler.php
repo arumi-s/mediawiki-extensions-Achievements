@@ -200,7 +200,8 @@ class AchievementHandler {
 				if ( $res ) {
 					$data = [];
 					while ( $row = $res->fetchRow() ) {
-						$data[$row['ac_id']] = wfTimestamp( TS_UNIX, $row['ac_date'] );
+						$ts = wfTimestamp( TS_UNIX, $row['ac_date'] );
+						if ( $ts > 0 ) $data[$row['ac_id']] = $ts;
 					}
 					ksort( $data, SORT_NATURAL );
 					return $data;
@@ -220,13 +221,29 @@ class AchievementHandler {
 		$list = [];
 		foreach ( $data as $id => $ts ) {
 			$achiev = self::AchievementFromStagedID( $id, $stage, $count );
-			if ( $achiev === false || $count > 0 ) continue;
+			if ( $achiev === false ) continue;
 			$name = $achiev->getID();
 			if ( $stage == 0 ) {
-				$list[$name] = [ $ts ];
+				if ( isset( $list[$name][0] ) ) {
+					if ( is_array( $list[$name][0] ) ) {
+						$list[$name][0][] = $ts;
+					} else {
+						$list[$name][0] = [ $list[$name][0], $ts ];
+					}
+				} else {
+					$list[$name] = [ $ts ];
+				}
 			} else {
 				if ( !isset( $list[$name] ) ) $list[$name] = [];
-				$list[$name][intval( $stage )] = $ts;
+				if ( isset( $list[$name][$stage] ) ) {
+					if ( is_array( $list[$name][$stage] ) ) {
+						$list[$name][$stage][] = $ts;
+					} else {
+						$list[$name][$stage] = [ $list[$name][$stage], $ts ];
+					}
+				} else {
+					$list[$name][$stage] = $ts;
+				}
 			}
 		}
 		return $list;
@@ -265,7 +282,12 @@ class AchievementHandler {
 		foreach ( $aclist as $aid => $tss ) {
 			$ac = AchievementHandler::AchievementFromID( $aid );
 			foreach ( $tss as $stage => $ts ) {
-				$score += $ac->getStageScore( $stage );
+				if ( $ac->isMultiple() && is_array( $ts ) ) {
+					$score += $ac->getStageScore( $stage ) * count( $ts );
+				} else {
+					$score += $ac->getStageScore( $stage );
+				}
+				
 			}
 		}
 		return $score;

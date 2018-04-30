@@ -100,6 +100,7 @@
 	"achiev-achievers-count-mystery" : "??",
 	"achiev-award-score" : "分數：$1",
 	"achiev-award-date" : "達成日期：$1",
+	"achiev-award-date-multi" : "（$1 次獲得）",
 	"achiev-award-none" : "未達成",
 
 	"echo-category-title-achiev" : "成就",
