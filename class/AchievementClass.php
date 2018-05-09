@@ -190,40 +190,40 @@ class Achievement {
 			case 'static':
 				 // 静态成就给予基本分，强烈建议设定scoremul来控制此分数
 				if ( $this->isStaged() ) {
-					$uscore = 5 * sqrt($stage); // 多阶成就根据给分阶段给分
+					$uscore = $multiply * 5 * sqrt($stage); // 多阶成就根据给分阶段给分
 				} else {
-					$uscore = 1; // 单阶成就给1分
+					$uscore = $multiply * 1; // 单阶成就给1分
 				}
 				break;
 			case 'watch':
-				$uscore = 0; // 以上类型由于太容易、很难控制等原因不给予分数
+				$uscore = $multiply * 0; // 以上类型由于太容易、很难控制等原因不给予分数
 				break;
 			case 'viewcount': case 'viewtop': case 'random':
-				$uscore += 1; // 半随机成就勉强给1分
+				$uscore += $multiply * 1; // 半随机成就勉强给1分
 				break;
 			case 'editcount':
-				$uscore += $trate * $rate * 5 * sqrt($stage) / 2 - $dscore;
+				$uscore += $multiply * $trate * $rate * 5 * sqrt($stage) / 2 - $dscore;
 				break;
 			case 'edittop':
-				$uscore += $icurr * $frate * $rate * 100 / $stage;
+				$uscore += $multiply * $icurr * $frate * $rate * 100 / $stage;
 				break;
 			case 'friendcount': case 'foecount':
-				$uscore += $trate * 2 * 5 * sqrt($stage) - $dscore;
+				$uscore += $multiply * $trate * 2 * 5 * sqrt($stage) - $dscore;
 				break;
 			case 'friendtop': case 'foetop':
-				$uscore += $icurr * $frate * 5 / $stage;
+				$uscore += $multiply * $icurr * $frate * 5 / $stage;
 				break;
 			case 'usergroup': 
-				$uscore += 10;
+				$uscore += $multiply * 10;
 				break;
 			case 'registerday': 
-				$uscore += $stage / 50 - $dscore;
+				$uscore += $multiply * $stage / 50 - $dscore;
 				break;
 			default : 
-				$uscore += 1;
+				$uscore += $multiply * 1;
 				break;
 		}
-		return max(0, ceil( $multiply * $uscore ) );
+		return max(0, ceil( $uscore ) );
 	}
 
 	public function getAfterLinkMsg ( $stage = 0, $plain = true ) {

@@ -283,7 +283,7 @@ class AchievementHandler {
 			$ac = AchievementHandler::AchievementFromID( $aid );
 			foreach ( $tss as $stage => $ts ) {
 				if ( $ac->isMultiple() && is_array( $ts ) ) {
-					$score += $ac->getStageScore( $stage ) * count( $ts );
+					$score += round( $ac->getStageScore( $stage ) * 4 * ( 1 - pow( 3/4, count( $ts ) ) ) );
 				} else {
 					$score += $ac->getStageScore( $stage );
 				}
