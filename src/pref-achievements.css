@@ -1,5 +1,11 @@
 @charset "utf-8";
 
+#mw-htmlform-achievtitle .mw-input {
+    -webkit-column-count: 2;
+    -moz-column-count: 2;
+    column-count: 2;
+}
+
 table.achiev-item {
 	background-color: #ffffff;
 	border: 1px solid #e8e8e8;
@@ -102,6 +108,12 @@ td.achiev-prog {
 }
 
 @media screen and (max-width: 768px) {
+	#mw-htmlform-achievtitle .mw-input {
+		-webkit-column-count: 1;
+		-moz-column-count: 1;
+		column-count: 1;
+	}
+
 	td.achiev-name {
 		font-size: 100%;
 		padding: 4px 2px 2px 0 !important;

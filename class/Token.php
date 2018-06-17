@@ -33,7 +33,7 @@ class Token {
 	public static function getToken( $user, $achiev, $stage = 0, $opt ) {
 		global $wgAchievementsTokenLength;
 		if ( $wgAchievementsTokenLength <= 0 ) return false;
-		if ( $user->isAnon() || $user->isBlocked() || !$user->isAllowed( 'manageachievements' ) ) return false;
+		if ( !($user instanceof \User) || $user->isAnon() || $user->isBlocked() || !$user->isAllowed( 'manageachievements' ) ) return false;
 		if ( !$achiev->isAwardable() || !$achiev->isActive() ) return false;
 		
 		$cache = \ObjectCache::getMainStashInstance();
@@ -83,7 +83,8 @@ class Token {
 		return $this->toString();
 	}
 
-	public static function useToken( \User $user, $string ) {
+	public static function useToken( $user, $string ) {
+		if ( !($user instanceof \User) ) throw new AchievError( 'blocked-user' );
 		if ( $string instanceof Token ) {
 			$userToken = $string;
 		} else {

@@ -21,7 +21,7 @@ class EditTopCounter extends EditCountCounter  {
 	}
 
 	public function isQualify ( $count, $threshold = 1 ) {
-		return $count > 0 && $count === $this->getPositionCount( $threshold );
+		return $count > 0 && $count === $this->getPositionCount( $threshold ) && $count !== $this->getPositionCount( $threshold + 1 );
 	}
 
 	public function defaultConfig () {

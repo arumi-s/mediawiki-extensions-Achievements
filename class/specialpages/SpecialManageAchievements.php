@@ -332,7 +332,7 @@ class SpecialManageAchievements extends SpecialPage {
 				foreach ( $list as $stagename => $score ) {
 					$achiev = AchievementHandler::AchievementFromStagedID( $stagename, $stage );
 					if ( $achiev !== false ) {
-						$out->addHTML( '<li>'.$achiev->getNameMsg( $stage ) . $this->msg( 'parentheses' )->rawParams( $achiev->getDescMsg( $stage ) )->text() .': '. $score .'</li>' );
+						$out->addHTML( '<li>('.$stagename.') '.$achiev->getNameMsg( $stage ) . $this->msg( 'parentheses' )->rawParams( $achiev->getDescMsg( $stage ) )->text() .': '. $score .'</li>' );
 					}
 				}
 				$out->addHTML( '</ol>' );
@@ -409,9 +409,15 @@ class SpecialManageAchievements extends SpecialPage {
 			case self::MODE_RANDOM:
 				$out->setPageTitle( $this->msg( 'manageachievements-mode-random' ) );
 				$list = AchievementHandler::AchievementsFromCounter( 'random' );
+				$clear = trim( $request->getVal( 'clear', '' ) );
 				$out->addHTML( '<ul>' );
 				foreach ( $list as $ac ) {
-					$out->addHTML( '<li>'.$ac->getID().': '.date('Y-m-d H:i:s', $ac->getCounter()->getNextTimestamp() )."</li>\n" );
+					$cleared = false;
+					if ( $ac->getID() === $clear ) {
+						$ac->getCounter()->clearNextTimestamp();
+						$cleared = true;
+					}
+					$out->addHTML( '<li>'.$ac->getID().': '.date('Y-m-d H:i:s', $ac->getCounter()->getNextTimestamp() ).($cleared?' (NEW)':'')."</li>\n" );
 				}
 				$out->addHTML( '</ul>' );
 				break;
