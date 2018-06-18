@@ -343,6 +343,14 @@ class SpecialManageAchievements extends SpecialPage {
 				break;
 			case self::MODE_TOKENS:
 				$out->setPageTitle( $this->msg( 'manageachievements-mode-tokens' ) );
+				$delete = trim( $request->getVal( 'delete', '' ) );
+				
+				if ( !empty( $delete ) ) {
+					Token::deleteByHash( $delete );
+					$out->redirect( SpecialPage::getTitleFor( 'ManageAchievements', 'tokens' ) );
+					break;
+				}
+
 				$dbw = wfGetDB( DB_SLAVE );
 				$keyprefix = str_replace( '@@', '', Token::getMemcKey( '@@' ) );
 
@@ -354,6 +362,8 @@ class SpecialManageAchievements extends SpecialPage {
 					[ 'ORDER BY' => 'exptime ASC', 'LIMIT' => 1000 ]
 				);
 				if ( $res ) {
+					$linkRenderer = $this->getLinkRenderer();
+
 					$keylist = [];
 					$explist = [];
 					foreach ( $res as $row ) {
@@ -373,12 +383,14 @@ class SpecialManageAchievements extends SpecialPage {
 						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-count' )->text() ) .
 						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-limit' )->text() ) .
 						Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-exptime' )->text() ) .
+						Html::rawElement( 'th', [], $this->msg( 'delete' )->text() ) .
 						Html::closeElement( 'tr' )
 					);
 					foreach ( $datalist as $key => &$data ) {
 						if ( empty( $data ) || !isset( $data['achiev'] ) ) continue;
+						$hash = str_replace( $keyprefix, '', $key );
 						$out->addHTML( Html::openElement( 'tr' ) );
-						$out->addHTML( Html::rawElement( 'td', [], str_replace( $keyprefix, '', $key ) ) );
+						$out->addHTML( Html::rawElement( 'td', [], $hash ) );
 						$out->addHTML( Html::rawElement( 'td', [], $data['achiev'] ) );
 						if ( !empty( $data['user'] ) ) {
 							$out->addHTML( Html::rawElement( 'td', [], User::whoIs( $data['user'] ) ) );
@@ -401,6 +413,13 @@ class SpecialManageAchievements extends SpecialPage {
 							$out->addHTML( Html::rawElement( 'td', [], '' ) );
 						}
 						$out->addHTML( Html::rawElement( 'td', [ 'data-sort-value' => $explist[$key] ], $lang->userTimeAndDate( $explist[$key], $user ) ) );
+
+						$out->addHTML( Html::rawElement( 'td', [], $linkRenderer->makeKnownLink(
+							SpecialPage::getTitleFor( 'ManageAchievements', 'tokens' ),
+							$this->msg( 'delete' )->text(),
+							[],
+							['delete' => $hash]
+						) ) );
 						$out->addHTML( Html::closeElement( 'tr' ) );
 					}
 					$out->addHTML( Html::closeElement( 'table' ) );

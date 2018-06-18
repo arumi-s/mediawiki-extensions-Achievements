@@ -45,12 +45,16 @@ class SpecialRedeemAchievement extends \SpecialPage {
 	}
 	
 	protected function showForm( $inputstring, $admin = false ) {
+		global $wgAchievementsTokenLength;
 		$formDescriptor = array(
 			'token' => array(
 				'label-message' => 'redeem-achiev-token',
 				'class' => 'HTMLTextField',
 				'default' => $inputstring,
-                'help-message' => 'redeem-achiev-token-help',
+                'help' => $this->msg('redeem-achiev-token-help' )->rawParams(
+					Token::sampleToken('X'),
+					$wgAchievementsTokenLength
+				)->parse(),
 			),
 		);
 		if ( $admin ) {

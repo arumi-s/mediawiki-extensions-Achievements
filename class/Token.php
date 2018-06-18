@@ -18,6 +18,11 @@ class Token {
 		$this->new = $new;
 	}
 
+	static public function sampleToken ( $letter ) {
+		global $wgAchievementsTokenLength;
+		return (new Self( str_pad( '', $wgAchievementsTokenLength, $letter ), true ) )->toString();
+	}
+
 	static private function trimToken ( $string ) {
 		return strtolower( preg_replace( '/[^0-9a-fA-F]/', '', (string)$string ) );
 	}
@@ -138,6 +143,11 @@ class Token {
 		}
 		
 		return [$achiev, $stage, $count];
+	}
+
+	public static function deleteByHash( String $hash ) {
+		$cache = \ObjectCache::getMainStashInstance();
+		return $cache->delete( Token::getMemcKey( $hash ) );
 	}
 
 	/**
