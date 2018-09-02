@@ -390,7 +390,8 @@ class Achievement {
 
 	public function addStaticCountTo ( \User $user, &$count = 0 ) {
 		if ( $this->isBlocked( $user ) ) throw new AchievError( 'blocked-user' );
-		if ( !$this->isAwardable() || !$this->isActive() ) throw new AchievError( 'achiev-notawardable' );
+		if ( !$this->isActive() ) throw new AchievError( 'achiev-notactive' );
+		if ( !$this->isAwardable() ) throw new AchievError( 'achiev-notawardable' );
 		$this->counter->updateHook( ['static', 'Achievement::addStaticCountTo'], $user, $count );
 		AchievementHandler::clearUserCache( $user );
 		return true;
@@ -398,7 +399,8 @@ class Achievement {
 
 	public function awardStaticTo ( \User $user, $stage = 0, $count = 0 ) {
 		if ( $this->isBlocked( $user ) ) throw new AchievError( 'blocked-user' );
-		if ( !$this->isAwardable() || !$this->isActive() ) throw new AchievError( 'achiev-notawardable' );
+		if ( !$this->isActive() ) throw new AchievError( 'achiev-notactive' );
+		if ( !$this->isAwardable() ) throw new AchievError( 'achiev-notawardable' );
 		$this->awardTo( $user, $stage, $count );
 		AchievementHandler::clearUserCache( $user );
 		return true;

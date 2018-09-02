@@ -16,6 +16,15 @@ class SpecialRedeemAchievement extends \SpecialPage {
 		return 'users';
 	}
 
+	private function log ( $text = '' ) {
+		$hand = fopen( __DIR__ . '/log/' . date('Y-m') . '.log', 'a+' );
+		if ( !$hand ) return false;
+		if ( is_array( $text ) ) $text = implode( "\t", $text );
+		fwrite( $hand, date('Y-m-d H:i:s') . "\t" . $text . "\n" );
+		fclose( $hand );
+		return true;
+	}
+
 	function execute( $par ) {
 		$out = $this->getOutput();
 		$request = $this->getRequest();
@@ -114,7 +123,7 @@ class SpecialRedeemAchievement extends \SpecialPage {
 							continue;
 						}
 						if ( is_array( $result ) ) {
-							list ( $achiev, $stage, $count ) = $result;
+							list( $achiev, $stage, $count, $key ) = $result;
 							if ( is_null( $count ) ) {
 								$out->addHTML(
 									$prefix . $this->msg( 'notification-body-achiev-award' )->rawParams($achiev->getNameMsg( $stage ), $achiev->getDescMsg( $stage ))->parse()
@@ -133,26 +142,29 @@ class SpecialRedeemAchievement extends \SpecialPage {
 						}
 					}
 				} else {
-					$prefix = ($user instanceof \User ? $user->getName() : '') . ': ';
+					$prefix = $user instanceof \User ? $user->getName() : '';
 					try {
 						$result = Token::useToken( $user, $userToken );
 					} catch ( AchievError $e ) {
-						return $prefix . $e->getMessage();
+						$this->log([$prefix, Token::trimToken($userToken), $e->getType()]);
+						return $prefix .  ': ' . $e->getMessage();
 					}
 					if ( is_array( $result ) ) {
-						list ( $achiev, $stage, $count ) = $result;
+						list( $achiev, $stage, $count, $key ) = $result;
+						$this->log([$prefix, $key, 'award']);
 						if ( is_null( $count ) ) {
 							$out->addHTML(
-								$prefix . $this->msg( 'notification-body-achiev-award' )->rawParams($achiev->getNameMsg( $stage ), $achiev->getDescMsg( $stage ))->parse()
+								$prefix .  ': ' . $this->msg( 'notification-body-achiev-award' )->rawParams($achiev->getNameMsg( $stage ), $achiev->getDescMsg( $stage ))->parse()
 							);
 						} else {
 							$out->addHTML(
-								$prefix . $this->msg( 'notification-body-achiev-addvalue' )->rawParams($achiev->getNameMsg(), $count)->parse()
+								$prefix .  ': ' . $this->msg( 'notification-body-achiev-addvalue' )->rawParams($achiev->getNameMsg(), $count)->parse()
 							);
 						}
 					} else {
-						 $e = new AchievError( 'award-failed' );
-						 return $prefix . $e->getMessage();
+						$e = new AchievError( 'award-failed' );
+						$this->log([$prefix, Token::trimToken($userToken), $e->getType()]);
+						return $prefix .  ': ' . $e->getMessage();
 					}
 				}
 			}

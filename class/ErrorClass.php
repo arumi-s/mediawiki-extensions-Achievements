@@ -3,17 +3,23 @@
 namespace Achiev;
 
 class AchievError extends \Exception {
+	protected $type = '';
 	/**
-	 * @param $msg string
+	 * @param $type string
 	 * @param $parameter string
 	 */
-	public function __construct ( $msg, $parameter = '' ) {
-		// Available $msg:
+	public function __construct ( $type, $parameter = '' ) {
+		// Available $type:
 		// 'invalid-stage', 'empty-token', 'invalid-token',
 		// 'invalid-source', 'blocked-source', 'blocked-user', 'wrong-user',
-		// 'achiev-notexists', 'achiev-notawardable',
+		// 'achiev-notexists', 'achiev-notactive', 'achiev-notawardable',
 		// 'achiev-conflict', 'achiev-already', 'award-failed'
-		$this->message = wfMessage( 'achiev-error-' . $msg, $parameter )->parse();
+		$this->type = $type;
+		$this->message = wfMessage( 'achiev-error-' . $type, $parameter )->parse();
+	}
+
+	public function getType () {
+		return $this->type;
 	}
 
 }

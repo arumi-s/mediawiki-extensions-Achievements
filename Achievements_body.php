@@ -265,7 +265,7 @@ class ExtAchievement {
 		}
 
 		$usertitle = $user->getOption( 'achievtitle', '' );
-		AchievementHandler::updateUserAchievs( $user );
+		// AchievementHandler::updateUserAchievs( $user );
 		$allachievs = AchievementHandler::AchievementsFromAll();
 		AchievementHandler::sortAchievements( $allachievs );
 		$userachievs = AchievementHandler::getUserAchievs( $user );

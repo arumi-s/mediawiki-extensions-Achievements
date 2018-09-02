@@ -23,11 +23,11 @@ class Token {
 		return (new Self( str_pad( '', $wgAchievementsTokenLength, $letter ), true ) )->toString();
 	}
 
-	static private function trimToken ( $string ) {
+	static public function trimToken ( $string ) {
 		return strtolower( preg_replace( '/[^0-9a-fA-F]/', '', (string)$string ) );
 	}
 
-	private function getTokenMemcKey () {
+	public function getTokenMemcKey () {
 		return self::getMemcKey( hash_hmac( 'md5', $this->secret, false ) );
 	}
 
@@ -39,7 +39,7 @@ class Token {
 		global $wgAchievementsTokenLength;
 		if ( $wgAchievementsTokenLength <= 0 ) return false;
 		if ( !($user instanceof \User) || $user->isAnon() || $user->isBlocked() || !$user->isAllowed( 'manageachievements' ) ) return false;
-		if ( !$achiev->isAwardable() || !$achiev->isActive() ) return false;
+		if ( !$achiev->isAwardable() ) return false;
 		
 		$cache = \ObjectCache::getMainStashInstance();
 		$secret = \MWCryptRand::generateHex( $wgAchievementsTokenLength );
@@ -142,7 +142,7 @@ class Token {
 			$cache->delete( $key );
 		}
 		
-		return [$achiev, $stage, $count];
+		return [$achiev, $stage, $count, $key];
 	}
 
 	public static function deleteByHash( String $hash ) {

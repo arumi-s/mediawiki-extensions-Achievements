@@ -359,7 +359,7 @@ class SpecialManageAchievements extends SpecialPage {
 					[ 'keyname', 'exptime' ],
 					[ 'keyname ' . $dbw->buildLike( $keyprefix, $dbw->anyString() ) ],
 					__METHOD__,
-					[ 'ORDER BY' => 'exptime ASC', 'LIMIT' => 1000 ]
+					[ 'ORDER BY' => 'exptime ASC', 'LIMIT' => 2000 ]
 				);
 				if ( $res ) {
 					$linkRenderer = $this->getLinkRenderer();
@@ -514,6 +514,11 @@ class SpecialManageAchievements extends SpecialPage {
 				'class' => 'HTMLTextField',
 				'default' => '86400',
 			),
+			'batch' => array(
+				'label-message' => 'manage-achiev-token-batch',
+				'class' => 'HTMLTextField',
+				'default' => '1',
+			),
 		);
 
 		$htmlForm = new HTMLForm( $formDescriptor, $this->getContext(), 'manage-achiev' );
@@ -621,34 +626,64 @@ class SpecialManageAchievements extends SpecialPage {
 
 				if ( !empty( $data['time'] ) ) $opt['time'] = intval( $data['time'] );
 				else $opt['time'] = 86400;
-				
-				$token = Token::getToken( $this->getUser(), $achiev, $stage, $opt );
-				if ( $token ) {
-					if ( $opt['target'] instanceof \User ) {
-						$this->successMessage .= $this->msg( 'manage-achiev-token-user' )->parse() . $opt['target']->getName() . '<br />';
-					}
-					if ( isset( $opt['count'] ) ) {
-						$this->successMessage .= $this->msg( 'manage-achiev-token-count' )->parse() . $opt['count'] . '<br />';
-					}
-					if ( isset( $opt['limit'] ) ) {
-						$this->successMessage .= $this->msg( 'manage-achiev-token-limit' )->parse() . $opt['limit'] . '<br />';
-					}
-					if ( isset( $opt['time'] ) ) {
-						$this->successMessage .= $this->msg( 'manage-achiev-token-time' )->parse() . $opt['time'] . '<br />';
-					}
-					$this->successMessage .= Html::element( 'input', ['type' =>'text', 'value' => $token->toString() ] ). '<br />';
-					$this->successMessage .= Html::element( 'a', ['target' =>'_blank', 'href' => $token->toUrl() ], $token->toUrl() ). '<br />';
-				} else {
-					if ( $achiev->isAwardable() ) {
-						return $this->msg( 'manage-achiev-token-fail' )->parse();
+
+				if ( !empty( $data['batch'] ) ) $batch = intval( $data['batch'] );
+				else $batch = 1;
+
+				if ( isset( $opt['target'] ) && $opt['target'] instanceof \User ) {
+					$this->successMessage .= $this->msg( 'manage-achiev-token-user' )->parse() . $opt['target']->getName() . '<br />';
+				}
+				if ( isset( $opt['count'] ) ) {
+					$this->successMessage .= $this->msg( 'manage-achiev-token-count' )->parse() . $opt['count'] . '<br />';
+				}
+				if ( isset( $opt['limit'] ) ) {
+					$this->successMessage .= $this->msg( 'manage-achiev-token-limit' )->parse() . $opt['limit'] . '<br />';
+				}
+				if ( isset( $opt['time'] ) ) {
+					$this->successMessage .= $this->msg( 'manage-achiev-token-time' )->parse() . $opt['time'] . '<br />';
+				}
+
+				$this->successMessage .= (
+					Html::openElement( 'table', [ 'class' => 'wikitable sortable' ] ) .
+					Html::openElement( 'tr' ) .
+					Html::rawElement( 'th', [], 'QR Code' ) .
+					Html::rawElement( 'th', [], 'Code' ) .
+					Html::rawElement( 'th', [], 'URL' ) .
+					//Html::rawElement( 'th', [], $this->msg( 'manage-achiev-tokens-hash' )->text() ) .
+					Html::closeElement( 'tr' )
+				);
+				for ( $num = 0; $num < $batch; ++$num ) {
+					$token = Token::getToken( $this->getUser(), $achiev, $stage, $opt );
+					if ( $token ) {
+						$this->successMessage .= Html::openElement( 'tr' );
+						$this->successMessage .= Html::rawElement( 'td', [], $this->getQRCode( $token->toUrl() ) );
+						$this->successMessage .= Html::element( 'td', [], $token->toString() );
+						$this->successMessage .= Html::rawElement( 'td', [], Html::element( 'a', ['target' =>'_blank', 'href' => $token->toUrl() ], 'URL' ) );
+						//$this->successMessage .= Html::element( 'td', [], $token->getTokenMemcKey() );
+						$this->successMessage .= Html::closeElement( 'tr' );
 					} else {
-						return $this->msg( 'manage-achiev-token-notawardable' )->parse();
+						if ( $achiev->isAwardable() ) {
+							$this->successMessage .= Html::closeElement( 'table' );
+							return $this->msg( 'manage-achiev-token-fail' )->parse();
+						} else {
+							$this->successMessage .= Html::closeElement( 'table' );
+							return $this->msg( 'manage-achiev-token-notawardable' )->parse();
+						}
 					}
 				}
+				$this->successMessage .= Html::closeElement( 'table' );
 			} else {
 				return $this->msg( 'manage-achiev-token-invalid' )->parse();
 			}
 		}
 		return false;
 	}
+
+	private function getQRCode ( $url ) {
+		if ( !class_exists( '\\QRLiteHooks' ) ) return '';
+		global $wgParser;
+		$res = \QRLiteHooks::qrliteFunctionHook( $wgParser, $url, 'format=png', 'size=5', 'ecc=2', 'margin=2' );
+		return is_array( $res ) && isset( $res[0] ) ? $res[0] : '';
+	}
+
 }
