@@ -56,9 +56,8 @@ abstract class Counter {
 	public function resetCount ( \User $user, $clearCache = true ) {
 		if ( !$this->isActive() ) return;
 		$value = $this->initUserCount( $user, 0 );
-		if ( !is_null( $value ) ) {
-			$this->updateUserCountDB( $user, $value );
-		}
+		if ( is_null( $value ) ) $value = 0;
+		$this->updateUserCountDB( $user, $value );
 		$this->updateAchiev( $user, $clearCache );
 	}
 
@@ -74,10 +73,10 @@ abstract class Counter {
 		return $count >= $threshold;
 	}
 
-	protected function initUserCountDB ( \User $user, $value = 0 ) {
+	public function initUserCountDB ( \User $user, $value = 0 ) {
 		if ( is_null( $this->id ) ) return false;
 		$value = $this->initUserCount( $user, intval( $value ) );
-		if ( is_null( $value ) ) return false;
+		if ( is_null( $value ) ) $value = 0;
 		$value = max(intval( $value ), 0);
 		$dbw = wfGetDB( DB_MASTER );
 		$dbw->insert(
@@ -87,7 +86,7 @@ abstract class Counter {
 		return true;
 	}
 
-	protected function updateUserCountDB ( \User $user, $value = 0 ) {
+	public function updateUserCountDB ( \User $user, $value = 0 ) {
 		if ( is_null( $this->id ) ) return false;
 		$value = max(intval( $value ), 0);
 		$dbw = wfGetDB( DB_MASTER );

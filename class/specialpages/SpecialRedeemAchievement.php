@@ -84,7 +84,7 @@ class SpecialRedeemAchievement extends \SpecialPage {
 		}
 		$htmlForm = new \HTMLForm( $formDescriptor, $this->getContext(), 'redeem-achiev' );
 
-		$htmlForm->setTitle( $this->getTitle() );
+		$htmlForm->setTitle( $this->getPageTitle() );
 		$htmlForm->setWrapperLegend( $this->msg('redeem-achiev-token-section' )->parse() );
 		$htmlForm->setMethod( 'post' );
 		$htmlForm->setSubmitText( $this->msg('htmlform-submit') );

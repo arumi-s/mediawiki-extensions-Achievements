@@ -35,8 +35,8 @@ class ExtAchievement {
 		global $wgLang, $wgAchievementsScoring;
 
 		$admin = is_null( $tss );
-		$block = Html::openElement( 'table', [ 'class' => 'achiev-item' ] );
-		$block .= Html::openElement( 'tr' );
+		$block = Html::openElement( 'div', [ 'class' => 'achiev-item' ] );
+
 		$thresholds = $achiev->getConfig( 'threshold' );
 		$realts = $achiev->hasRealThreshold();
 		
@@ -53,8 +53,10 @@ class ExtAchievement {
 			}
 		}
 		
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-image', 'rowspan' => 4 ], $image );
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-name' ], $achiev->getNameMsg() );
+		$block .= Html::rawElement( 'div', [ 'class' => 'achiev-image' ], $image );
+
+		$block .= Html::openElement( 'div', [ 'class' => 'achiev-body' ] );
+		$block .= Html::rawElement( 'div', [ 'class' => 'achiev-name' ], $achiev->getNameMsg() );
 		
 		$stageBlocks = '';
 		$lastStage = 0;
@@ -79,7 +81,7 @@ class ExtAchievement {
 						$achiev->getDescMsg( $threshold ) . '<div class="achiev-note">' .
 						($score>0?wfMessage( 'achiev-award-score' )->rawParams( $score )->text() . '<br />':'') .
 						wfMessage( 'achiev-award-date' )->rawParams(
-							'<br />' . self::dateList( $wgLang, $user, $tss[$threshold] )
+							'<br />' . self::dateList( $wgLang, $user, is_null( $tss ) ? null : $tss[$threshold] )
 						)->text() . '</div>',
 						'achiev-block achiev-block-c'
 					);
@@ -113,11 +115,7 @@ class ExtAchievement {
 			$achievers[] = AchievementHandler::countAchievers( $achiev->getID(), null, $admin );
 		}
 
-		if ( $stageBlocks !== '' ) $block .= Html::rawElement( 'td', [ 'class' => 'achiev-stage', 'rowspan' => 4 ], $stageBlocks );
-		$block .= Html::openElement( 'tr' );
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-desc',  ], $achiev->getDescMsg() );
-		$block .= Html::closeElement( 'tr' );
-		$block .= Html::openElement( 'tr' );
+		$block .= Html::rawElement( 'div', [ 'class' => 'achiev-desc',  ], $achiev->getDescMsg() );
 		
 		$progBar = '';
 		
@@ -167,8 +165,7 @@ class ExtAchievement {
 			) . Html::rawElement( 'div', [ 'class' => 'achiev-bartext' ], $progtext );
 		}
 		
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-prog' ], $progBar );
-		$block .= Html::closeElement( 'tr' );
+		$block .= Html::rawElement( 'div', [ 'class' => 'achiev-prog' ], $progBar );
 
 		$footnotes = [];
 		if ( $achiev->getConfig( 'hidden', false ) ) {
@@ -228,10 +225,13 @@ class ExtAchievement {
 			}
 		}
 
-		$block .= Html::openElement( 'tr' );
-		$block .= Html::rawElement( 'td', [ 'class' => 'achiev-note' ], implode( wfMessage( 'achiev-footnote-sep' )->text(), $footnotes ) );
+		$block .= Html::rawElement( 'div', [ 'class' => 'achiev-note' ], implode( wfMessage( 'achiev-footnote-sep' )->text(), $footnotes ) );
 		
-		$block .= Html::closeElement( 'table' );
+		$block .= Html::closeElement( 'div' );
+
+		if ( $stageBlocks !== '' ) $block .= Html::rawElement( 'div', [ 'class' => 'achiev-stage' ], $stageBlocks );
+
+		$block .= Html::closeElement( 'div' );
 		
 		return $block;
 	}
@@ -343,7 +343,7 @@ class ExtAchievement {
 		}
 		
 		if ( in_array( $target->getNamespace(), $ns ) ) {
-			if ( (strpos( $attribs['href'], 'action=edit&redlink=1' ) !== false || strpos( $attribs['href'], 'action=' ) === false) && strpos( $attribs['href'], 'oldid=' ) === false ) {
+			if ( (strpos( $attribs['href'], 'action=edit&redlink=1' ) !== false || strpos( $attribs['href'], 'action=' ) === false) && strpos( $attribs['href'], 'oldid=' ) === false && strpos( $attribs['href'], '#' ) === false ) {
 				$user = User::newFromName( $target->getDBkey() );
 				if ( $user instanceof User && !$user->isAnon() ) {
 					if ( class_exists( 'wAvatar' ) ) {
@@ -368,6 +368,34 @@ class ExtAchievement {
 			}
 		}
 		return true;
+	}
+	
+	// 在Flow话题作者名称前加上头像
+	static public function FlowAvatarHelper( $user ) {
+		global $wgUploadPath;
+		if ( class_exists( 'wAvatar' ) ) {
+			global $wgUploadPath;
+			$id = $user['id'];
+			$avatar = new wAvatar( $id, 'm' );
+			return [Html::rawElement(
+				'img',
+				[
+					'class' => 'useravatar',
+					'src' => $wgUploadPath . '/avatars/' . $avatar->getAvatarImage()
+				]
+			), 'raw'];
+		}
+		return '';
+	}
+	
+	// 在Flow话题作者名称后加上头衔
+	static public function FlowTitleHelper( $user ) {
+		$user = User::newFromId( $user['id'] );
+		if ( $user instanceof User && !$user->isAnon() ) {
+			$text = AchievementHandler::getUserTitle( $user, false );
+			if ( $text !== false ) return [$text, 'raw'];
+		}
+		return '';
 	}
 
 	// 在用户资料页加上成就信息

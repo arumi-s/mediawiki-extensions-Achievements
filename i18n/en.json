@@ -119,5 +119,10 @@
 	"notification-body-achiev-link" : "Go to Preferences: Titles and Achievements",
 	"notification-body-achiev-addvalue" : "You have gained $2 progress for the achievement 〈$1〉",
 
-	"achievtitle-afterlink" : "〈$1〉"
+	"achievtitle-afterlink" : "〈$1〉",
+
+	"apihelp-query+achievementinfo-summary": "Get information about achievements of the current user.",
+	"apihelp-query+achievementinfo-param-prop": "Which pieces of information to include:",
+	"apihelp-query+achievementinfo-example-simple": "Get information about achievements of the current user.",
+	"apihelp-query+achievementinfo-example-data": "Get additional information about the current user."
 }

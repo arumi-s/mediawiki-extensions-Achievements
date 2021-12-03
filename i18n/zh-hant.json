@@ -119,5 +119,10 @@
 	"notification-body-achiev-link" : "前往頭銜及成就設置頁面",
 	"notification-body-achiev-addvalue" : "您在成就〈$1〉中獲得了 $2 進度",
 
-	"achievtitle-afterlink" : "〈$1〉"
+	"achievtitle-afterlink" : "〈$1〉",
+
+	"apihelp-query+achievementinfo-summary": "取得目前使用者的成就資訊。",
+	"apihelp-query+achievementinfo-param-prop": "要包含的資訊部份：",
+	"apihelp-query+achievementinfo-example-simple": "取得目前使用者的成就資訊。",
+	"apihelp-query+achievementinfo-example-data": "取得目前使用者的額外資訊。"
 }

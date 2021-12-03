@@ -10,16 +10,16 @@ namespace Achiev;
 
 if ( !defined( 'MEDIAWIKI' ) ) die();
 
-define( 'ACHIV_VERSION', '0.6.0' );
+define( 'ACHIV_VERSION', '0.7.0' );
 
-$wgExtensionCredits['parserhook'][] = array(
+$wgExtensionCredits['parserhook'][] = [
 	'path' => __FILE__,
 	'name' => 'Achievements',
 	'version' => ACHIV_VERSION,
 	'author' => [ '[https://thwiki.cc/User:Arumi Arumi]' ],
 	'url' => 'https://thwiki.cc/%E5%B8%AE%E5%8A%A9:%E6%88%90%E5%B0%B1%E6%89%A9%E5%B1%95',
 	'descriptionmsg' => 'achievements-desc',
-);
+];
 
 // 默认设定
 $wgAchievementsIconStaged = $wgLogo;
@@ -43,8 +43,16 @@ $wgAutoloadClasses['Achiev\\SpecialManageAchievements'] = __DIR__ . '/class/spec
 $wgSpecialPages['RedeemAchievement'] = 'Achiev\\SpecialRedeemAchievement';
 $wgAutoloadClasses['Achiev\\SpecialRedeemAchievement'] = __DIR__ . '/class/specialpages/SpecialRedeemAchievement.php';
 
+// 成就列表API
+$wgAPIListModules['allachievements'] = 'Achiev\\ApiQueryAllAchievements';
+$wgAutoloadClasses['Achiev\\ApiQueryAllAchievements'] = __DIR__ . '/class/apis/ApiQueryAllAchievements.php';
+
+// 用户成就资料API
+$wgAPIMetaModules['achievementinfo'] = 'Achiev\\ApiQueryAchievementInfo';
+$wgAutoloadClasses['Achiev\\ApiQueryAchievementInfo'] = __DIR__ . '/class/apis/ApiQueryAchievementInfo.php';
+
 // Hook处理类
-$wgAutoloadClasses['ExtAchievement'] = __DIR__ . '/Achievements_body.php';
+$wgAutoloadClasses['ExtAchievement'] = __DIR__ . '/AchievementsHooks.php';
 // Achievement成就类
 $wgAutoloadClasses['Achiev\\Achievement'] = __DIR__ . '/class/AchievementClass.php';
 // Counter计数器类
@@ -57,7 +65,7 @@ $wgAutoloadClasses['Achiev\\AchievError'] = __DIR__ . '/class/ErrorClass.php';
 $wgAutoloadClasses['Achiev\\AchievPresentationModel'] = __DIR__ . '/class/PresentationModel.php';
 
 // 在所有页面中显示成就效果
-$wgResourceModules['ext.achievement'] = array(
+$wgResourceModules['ext.achievement'] = [
 	'localBasePath' => __DIR__ . '/src',
 	'remoteExtPath' => 'Achievements/src',
 	'scripts' => 'achievements.js',
@@ -65,15 +73,26 @@ $wgResourceModules['ext.achievement'] = array(
 	'dependencies' => [
 		'jquery.tipsy'
 	],
-);
+];
 
 // 在用户设定页面中显示成就列表
-$wgResourceModules['ext.pref.achievement'] = array(
+$wgResourceModules['ext.pref.achievement'] = [
 	'localBasePath' => __DIR__ . '/src',
 	'remoteExtPath' => 'Achievements/src',
 	'scripts' => 'pref-achievements.js',
 	'styles' => 'pref-achievements.css',
-);
+];
+
+$wgResourceModules['ext.achievementSuggest'] = [
+	'localBasePath' => __DIR__ . '/src',
+	'remoteExtPath' => 'Achievements/src',
+	'scripts' => 'achievementSuggest.js',
+	'dependencies' => [
+		'jquery.suggestions',
+		'mediawiki.api'
+	]
+];
+
 
 $wgHooks['ParserFirstCallInit'][] = 'ExtAchievement::init';
 $wgHooks['GetPreferences'][] = 'ExtAchievement::onGetPreferences';

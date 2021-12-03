@@ -2,6 +2,7 @@
 
 namespace Achiev;
 
+use \MediaWiki\MediaWikiServices;
 use \SpecialPage;
 use \User;
 use \Html;
@@ -22,6 +23,8 @@ class SpecialManageAchievements extends SpecialPage {
 	const MODE_SCORING = 9;
 	const MODE_TOKEN = 20;
 	const MODE_TOKENS = 21;
+	const MODE_TEST_TOKEN = 22;
+	const MODE_OTHER = 98;
 	const MODE_RANDOM = 99;
 
 	function __construct() {
@@ -73,9 +76,15 @@ class SpecialManageAchievements extends SpecialPage {
 			case 'tokens':
 			case self::MODE_TOKENS:
 				return self::MODE_TOKENS;
+			case 'testtoken':
+			case self::MODE_TEST_TOKEN:
+				return self::MODE_TEST_TOKEN;
 			case 'random':
 			case self::MODE_RANDOM:
 				return self::MODE_RANDOM;
+			case 'other':
+			case self::MODE_OTHER:
+				return self::MODE_OTHER;
 			default:
 				return false;
 		}
@@ -370,7 +379,7 @@ class SpecialManageAchievements extends SpecialPage {
 						$keylist[] = $row->keyname;
 						$explist[$row->keyname] = $row->exptime;
 					}
-					$cache = \ObjectCache::getMainStashInstance();
+					$cache = MediaWikiServices::getInstance()->getMainObjectStash();
 					$datalist = $cache->getMulti( $keylist );
 					
 					$out->addHTML(
@@ -425,6 +434,27 @@ class SpecialManageAchievements extends SpecialPage {
 					$out->addHTML( Html::closeElement( 'table' ) );
 				}
 				break;
+			case self::MODE_TEST_TOKEN:
+				$out->setPageTitle( $this->msg( 'manageachievements-mode-prog' ) );
+				$this->showAchievForm( 'processTestTokenInput' );
+				break;
+			case self::MODE_OTHER:
+				$dbw = wfGetDB( DB_SLAVE );
+				$res = $dbw->select(
+					'dish_game',
+					[ 'user_id', 'COUNT(1) as dish', 'MAX(get_date) as dish_date' ],
+					[ 'user_id > 0' ],
+					__METHOD__,
+					[ 'GROUP BY' => 'user_id', 'HAVING'=>'dish = 109' ]
+				);
+				$out->addHTML( '<ul>' );
+				if ( $res ) {
+					foreach ( $res as $row ) {
+						$out->addHTML( '<li>'.$row->user_id.': '. $row->dish.' ' .$row->dish_date. "</li>\n" );
+					}
+				}
+				$out->addHTML( '</ul>' );
+				break;
 			case self::MODE_RANDOM:
 				$out->setPageTitle( $this->msg( 'manageachievements-mode-random' ) );
 				$list = AchievementHandler::AchievementsFromCounter( 'random' );
@@ -454,6 +484,7 @@ class SpecialManageAchievements extends SpecialPage {
 			'achiev' => array(
 				'label-message' => 'manage-achiev-name',
 				'class' => 'HTMLTextField',
+				'cssclass' => 'mw-autocomplete-achievement',
 				'default' => '',
 			),
 		);
@@ -463,7 +494,9 @@ class SpecialManageAchievements extends SpecialPage {
 
 		$htmlForm->setMethod( 'get' );
 		$htmlForm->setSubmitText( $this->msg('htmlform-submit') );
-		$htmlForm->setSubmitCallback( [ $this, $callback ] );  
+		$htmlForm->setSubmitCallback( [ $this, $callback ] );
+
+		$this->getOutput()->addModules( 'ext.achievementSuggest' );
 
 		return $htmlForm->show();
 	}
@@ -473,6 +506,7 @@ class SpecialManageAchievements extends SpecialPage {
 			'user' => array(
 				'label-message' => 'manage-achiev-user',
 				'class' => 'HTMLTextField',
+				'cssclass' => 'mw-autocomplete-user',
 				'default' => '',
 			),
 		);
@@ -482,7 +516,9 @@ class SpecialManageAchievements extends SpecialPage {
 
 		$htmlForm->setMethod( 'get' );
 		$htmlForm->setSubmitText( $this->msg('htmlform-submit') );
-		$htmlForm->setSubmitCallback( [ $this, $callback ] );  
+		$htmlForm->setSubmitCallback( [ $this, $callback ] );
+
+		$this->getOutput()->addModules( 'mediawiki.userSuggest' );
 
 		return $htmlForm->show();
 	}
@@ -492,11 +528,13 @@ class SpecialManageAchievements extends SpecialPage {
 			'achiev' => array(
 				'label-message' => 'manage-achiev-name',
 				'class' => 'HTMLTextField',
+				'cssclass' => 'mw-autocomplete-achievement',
 				'default' => '',
 			),
 			'target' => array(
 				'label-message' => 'manage-achiev-token-user',
 				'class' => 'HTMLTextField',
+				'cssclass' => 'mw-autocomplete-user',
 				'default' => '',
 			),
 			'count' => array(
@@ -527,6 +565,9 @@ class SpecialManageAchievements extends SpecialPage {
 		$htmlForm->setMethod( 'post' );
 		$htmlForm->setSubmitText( $this->msg('htmlform-submit') );
 		$htmlForm->setSubmitCallback( [ $this, $callback ] );  
+
+		$this->getOutput()->addModules( 'mediawiki.userSuggest' );
+		$this->getOutput()->addModules( 'ext.achievementSuggest' );
 
 		return $htmlForm->show();
 	}
@@ -675,6 +716,18 @@ class SpecialManageAchievements extends SpecialPage {
 			} else {
 				return $this->msg( 'manage-achiev-token-invalid' )->parse();
 			}
+		}
+		return false;
+	}
+	
+	public function processTestTokenInput( $data ){
+		if ( !empty( $data['achiev'] ) ) {
+			$str = $data['achiev'];
+			$token = new Token($str);
+			$this->successMessage .= $token->getTokenMemcKey();
+			$cache = MediaWikiServices::getInstance()->getMainObjectStash();
+			$data = $cache->get( $token->getTokenMemcKey() );
+			$this->successMessage .= '<pre>'.htmlspecialchars(var_export($data, true)).'</pre>';
 		}
 		return false;
 	}

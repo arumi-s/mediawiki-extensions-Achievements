@@ -1,6 +1,7 @@
 <?php
 
 namespace Achiev;
+use MediaWiki\MediaWikiServices;
 
 class RandomCounter extends Counter  {
 
@@ -12,7 +13,7 @@ class RandomCounter extends Counter  {
 		// cache.
 		if ( is_null( $c ) ) {
 			$c = new \CachedBagOStuff(
-				\ObjectCache::getMainStashInstance()
+				MediaWikiServices::getInstance()->getMainObjectStash()
 			);
 		}
 

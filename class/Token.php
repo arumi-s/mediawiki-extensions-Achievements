@@ -1,6 +1,7 @@
 <?php
 
 namespace Achiev;
+use \MediaWiki\MediaWikiServices;
 
 class Token {
 
@@ -28,7 +29,7 @@ class Token {
 	}
 
 	public function getTokenMemcKey () {
-		return self::getMemcKey( hash_hmac( 'md5', $this->secret, false ) );
+		return self::getMemcKey( hash_hmac( 'md5', $this->secret, '', false ) );
 	}
 
 	static public function getMemcKey ( $t ) {
@@ -41,7 +42,7 @@ class Token {
 		if ( !($user instanceof \User) || $user->isAnon() || $user->isBlocked() || !$user->isAllowed( 'manageachievements' ) ) return false;
 		if ( !$achiev->isAwardable() ) return false;
 		
-		$cache = \ObjectCache::getMainStashInstance();
+		$cache = MediaWikiServices::getInstance()->getMainObjectStash();
 		$secret = \MWCryptRand::generateHex( $wgAchievementsTokenLength );
 		$token = new Self( $secret, true );
 		
@@ -97,7 +98,7 @@ class Token {
 		}
 		if ( $userToken->toString() === '' ) throw new AchievError( 'empty-token' );
 
-		$cache = \ObjectCache::getMainStashInstance();
+		$cache = MediaWikiServices::getInstance()->getMainObjectStash();
 		$key = $userToken->getTokenMemcKey();
 		
 		$data = $cache->get( $key );
@@ -146,7 +147,7 @@ class Token {
 	}
 
 	public static function deleteByHash( String $hash ) {
-		$cache = \ObjectCache::getMainStashInstance();
+		$cache = MediaWikiServices::getInstance()->getMainObjectStash();
 		return $cache->delete( Token::getMemcKey( $hash ) );
 	}
 

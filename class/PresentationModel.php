@@ -30,8 +30,8 @@ class AchievPresentationModel extends \EchoEventPresentationModel {
 	public function getBodyMessage() {
 		if ( $this->load() ) {
 			$msg = $this->msg( 'notification-body-' . $this->type );
-			$msg->plaintextParams( $this->achiev->getNameMsg( $this->stage ) );
-			$msg->plaintextParams( $this->achiev->getDescMsg( $this->stage ) );
+			$msg->plaintextParams( strip_tags($this->achiev->getNameMsg( $this->stage )) );
+			$msg->plaintextParams( strip_tags($this->achiev->getDescMsg( $this->stage )) );
 			return $msg;
 		} else {
 			return $this->msg( 'notification-body-achiev-invalid' );

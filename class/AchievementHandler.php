@@ -1,6 +1,7 @@
 <?php
 
 namespace Achiev;
+use \MediaWiki\MediaWikiServices;
 
 class AchievementHandler {
 	static protected $list = [];
@@ -101,17 +102,25 @@ class AchievementHandler {
 	}
 
 	static public function getUserTitle ( $user, $plain = true ) {
+		list($achiev, $stage) = self::getUserTitleAchievement( $user );
+		if ( $achiev instanceof Achievement ) {
+			return $achiev->getAfterLinkMsg( $stage, $plain );
+		}
+		return false;
+	}
+
+	static public function getUserTitleAchievement ( $user ) {
 		if ( $user instanceof \User && !$user->isAnon() && !$user->isBlocked() ) {
 			$title = $user->getOption( 'achievtitle', '' );
 			if ( self::quickCheckUserAchiev( $user, $title ) ) {
 				$stage = 0;
 				$achiev = self::AchievementFromStagedID( $title, $stage );
-				if ( $achiev !== false ) {
-					return $achiev->getAfterLinkMsg( $stage, $plain );
+				if ($achiev instanceof Achievement) {
+					return [$achiev, $stage];
 				}
 			}
 		}
-		return false;
+		return [null, 0];
 	}
 
 	static public function getAchievers ( $stagename, $stage = null ) {
@@ -149,7 +158,7 @@ class AchievementHandler {
 			$stagename .= ':' . $stage;
 		}
 		
-		$cache = \ObjectCache::getMainWANInstance();
+		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
 		$key = $cache->makeKey( 'achiev', 'count', $stagename );
 		
 		if ( $refresh ) $cache->delete( $key, 1 );
@@ -180,7 +189,7 @@ class AchievementHandler {
 		if ( !($user instanceof \User) ) {
 			return [];
 		}
-		$cache = \ObjectCache::getMainWANInstance();
+		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
 		
 		return $cache->getWithSetCallback(
 			$cache->makeKey( 'achiev', 'user', 'achiev', $user->getId() ),
@@ -322,7 +331,7 @@ class AchievementHandler {
 			return;
 		}
 
-		$cache = \ObjectCache::getMainWANInstance();
+		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
 		$key = $cache->makeKey( 'achiev', 'user', 'achiev', $user->getId() );
 		if ( $mode === 'refresh' ) {
 			$cache->delete( $key, 1 );

@@ -14,7 +14,7 @@ class EditCountCounter extends Counter  {
 			$dbr = wfGetDB( DB_SLAVE );
 			if ( isset( $cond['page'] ) ) {
 				$res = $dbr->select(
-					['page', 'revision'],
+					['page', 'revision_actor_temp'],
 					'COUNT(DISTINCT page_id)',
 					[
 						$cond['subpage'] ? $dbr->makeList(
@@ -30,42 +30,42 @@ class EditCountCounter extends Counter  {
 					__METHOD__,
 					[],
 					[
-						'revision' => [
+						'revision_actor_temp' => [
 							'INNER JOIN',
-							[ 'rev_page=page_id', 'rev_user' => $user->getId() ]
+							[ 'revactor_page=page_id', 'revactor_actor' => $user->getActorId() ]
 						]
 					]
 				);
 			} else {
 				if ( isset( $cond['cat'] ) ) {
 					$res = $dbr->select(
-						['page', 'revision', 'categorylinks'],
+						['page', 'revision_actor_temp', 'categorylinks'],
 						'COUNT(DISTINCT page_id)',
 						isset( $cond['ns'] ) ? [ 'page_namespace' => $cond['ns'] ] : [],
 						__METHOD__,
 						[],
 						[
-							'revision' => [
+							'revision_actor_temp' => [
 								'INNER JOIN',
-								[ 'rev_page=page_id', 'rev_user' => $user->getId() ]
+								[ 'revactor_page=page_id', 'revactor_actor' => $user->getActorId() ]
 							],
 							'categorylinks' => [
 								'INNER JOIN',
-								[ 'cl_from=rev_page', 'cl_to' => $cond['cat'] ]
+								[ 'cl_from=page_id', 'cl_to' => $cond['cat'] ]
 							]
 						]
 					);
 				} elseif ( isset( $cond['ns'] ) ) {
 					$res = $dbr->select(
-						['page', 'revision'],
+						['page', 'revision_actor_temp'],
 						'COUNT(DISTINCT page_id)',
 						[ 'page_namespace' => $cond['ns'], 'page_is_redirect' => 0 ],
 						__METHOD__,
 						[],
 						[
-							'revision' => [
+							'revision_actor_temp' => [
 								'INNER JOIN',
-								[ 'rev_page=page_id', 'rev_user' => $user->getId() ]
+								[ 'revactor_page=page_id', 'revactor_actor' => $user->getActorId() ]
 							]
 						]
 					);
@@ -128,15 +128,15 @@ class EditCountCounter extends Counter  {
 			}
 			if ( $inpage && $inns && $incat ) {
 				$prev = (int)$dbr->selectField(
-					'revision',
+					'revision_actor_temp',
 					'COUNT(1)',
 					[
-						'rev_page' => $title->getArticleID(),
-						'rev_user' => $user->getId(),
-						'rev_id <> ' . (int)($editInfo->output->getCacheRevisionId())
+						'revactor_page' => $title->getArticleID(),
+						'revactor_actor' => $user->getActorId(),
+						'revactor_rev <> ' . (int)($editInfo->output->getCacheRevisionId())
 					]
 				);
-				if ( $prev == 0 ) {
+				if ( $prev === 0 ) {
 					$this->addUserCountDB( $user, 1 );
 					$this->updateAchievSafe( $user );
 				}
@@ -181,9 +181,17 @@ class EditCountCounter extends Counter  {
 				}
 				if ( $inpage && $inns && $incat ) {
 					$prev = (int)$dbr->selectField(
-						'revision',
+						['revision_actor_temp', 'revision'],
 						'COUNT(1)',
-						[ 'rev_page' => $title->getArticleID(), 'rev_user' => $user->getId(), 'rev_parent_id > 0' ]
+						[ 'revactor_page' => $title->getArticleID(), 'revactor_actor' => $user->getActorId() ],
+						__METHOD__,
+						[],
+						[
+							'revision' => [
+								'INNER JOIN',
+								[ 'revactor_page=rev_id', 'rev_parent_id > 0' ]
+							]
+						]
 					);
 					if ( $prev <= 1 ) {
 						$this->addUserCountDB( $user, 1 );
